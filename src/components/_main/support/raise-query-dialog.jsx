@@ -24,14 +24,16 @@ import * as api from 'src/services';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 // constants
 import { SUPPORT_CATEGORY_OPTIONS } from 'src/constants/support';
+// components
+import EvidenceCapture from './evidence-capture';
 
 RaiseQueryDialog.propTypes = {
   open: PropTypes.bool,
   onClose: PropTypes.func,
   onCreated: PropTypes.func,
-  contextLabel: PropTypes.string, // shown above the form, e.g. "Order #J627911"
+  contextLabel: PropTypes.string,
   relatedOrder: PropTypes.string,
-  relatedOrderItem: PropTypes.string, // presence of this switches to the dynamic order-issue flow
+  relatedOrderItem: PropTypes.string,
   relatedProduct: PropTypes.string
 };
 
@@ -66,16 +68,16 @@ export default function RaiseQueryDialog({
 }
 
 // ────────────────────────────────────────────────────────────────
-// Order-issue flow — reasons come live from the eligibility endpoint,
-// annotated with this specific product's actual return policy.
+// Order-issue flow: reason (dynamic) -> evidence (if required) -> details
 // ────────────────────────────────────────────────────────────────
 function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, relatedOrderItem, relatedProduct }) {
   const queryClient = useQueryClient();
-  const [step, setStep] = useState('reason'); // 'reason' | 'details'
+  const [step, setStep] = useState('reason'); // 'reason' | 'evidence' | 'details'
   const [issueReason, setIssueReason] = useState(null);
   const [subReason, setSubReason] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
 
   const { data, isPending: loadingEligibility } = useQuery({
     queryKey: ['issue-eligibility', relatedOrderItem],
@@ -90,11 +92,12 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
       setSubReason('');
       setSubject('');
       setMessage('');
+      setEvidenceFiles([]);
     }
   }, [open]);
 
   const { mutate, isPending: submitting, error } = useMutation({
-    mutationFn: api.userRaiseSupportTicket,
+    mutationFn: (formData) => api.userRaiseSupportTicket(formData),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-support-tickets'] });
       onCreated?.(data.ticket);
@@ -105,27 +108,35 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
     setIssueReason(reason);
     setSubReason('');
     setSubject(reason.label);
-    setStep('details');
+    setStep(reason.minEvidenceCount > 0 ? 'evidence' : 'details');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!subject.trim() || !message.trim() || !issueReason) return;
-    mutate({
-      subject,
-      category: 'order_issue',
-      issueReason: issueReason.code,
-      subReason: subReason || undefined,
-      message,
-      relatedOrder,
-      relatedOrderItem,
-      relatedProduct
-    });
+    if (issueReason.minEvidenceCount > 0 && evidenceFiles.length < issueReason.minEvidenceCount) return;
+
+    const formData = new FormData();
+    formData.append('subject', subject);
+    formData.append('category', 'order_issue');
+    formData.append('issueReason', issueReason.code);
+    if (subReason) formData.append('subReason', subReason);
+    formData.append('message', message);
+    formData.append('relatedOrder', relatedOrder || '');
+    formData.append('relatedOrderItem', relatedOrderItem || '');
+    formData.append('relatedProduct', relatedProduct || '');
+    evidenceFiles.forEach((file) => formData.append('evidence', file));
+
+    mutate(formData);
   };
+
+  const evidenceMet = !issueReason || evidenceFiles.length >= (issueReason.minEvidenceCount || 0);
 
   return (
     <>
-      <DialogTitle>{step === 'reason' ? "What's the issue?" : issueReason?.label}</DialogTitle>
+      <DialogTitle>
+        {step === 'reason' ? "What's the issue?" : step === 'evidence' ? 'Add photo evidence' : issueReason?.label}
+      </DialogTitle>
       <DialogContent>
         {contextLabel && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -152,29 +163,35 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
                   <Typography variant="subtitle2" fontWeight={600}>
                     {reason.label}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: reason.policy ? 1 : 0 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                     {reason.description}
                   </Typography>
-                  {reason.policy && (
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" rowGap={0.5}>
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        color={reason.policy.returnsAccepted ? 'success' : 'default'}
-                        label={reason.policy.returnsAccepted ? 'Returns accepted' : 'No standard returns'}
-                      />
-                      {reason.policy.returnsAccepted && reason.policy.allowedWithinDays && (
-                        <Chip size="small" variant="outlined" label={`Within ${reason.policy.allowedWithinDays} days`} />
-                      )}
-                      {reason.policy.returnsAccepted && reason.policy.shippingPaidBy && (
-                        <Chip size="small" variant="outlined" label={`${reason.policy.shippingPaidBy} pays shipping`} />
-                      )}
-                    </Stack>
-                  )}
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" rowGap={0.5}>
+                    {reason.policy && (
+                      <>
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          color={reason.policy.returnsAccepted ? 'success' : 'default'}
+                          label={reason.policy.returnsAccepted ? 'Returns accepted' : 'No standard returns'}
+                        />
+                        {reason.policy.returnsAccepted && reason.policy.allowedWithinDays && (
+                          <Chip size="small" variant="outlined" label={`Within ${reason.policy.allowedWithinDays} days`} />
+                        )}
+                      </>
+                    )}
+                    {reason.minEvidenceCount > 0 ? (
+                      <Chip size="small" variant="outlined" label={`${reason.minEvidenceCount} photos required`} />
+                    ) : (
+                      <Chip size="small" variant="outlined" label="No photos needed" />
+                    )}
+                  </Stack>
                 </CardActionArea>
               </Card>
             ))}
           </Stack>
+        ) : step === 'evidence' ? (
+          <EvidenceCapture minCount={issueReason.minEvidenceCount} maxCount={6} onChange={setEvidenceFiles} />
         ) : (
           <form id="order-issue-form" onSubmit={handleSubmit}>
             <Stack spacing={2.5} sx={{ mt: 0.5 }}>
@@ -221,14 +238,24 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        {step === 'details' && (
+        {step === 'evidence' && (
           <Button onClick={() => setStep('reason')} color="inherit">
+            Back
+          </Button>
+        )}
+        {step === 'details' && (
+          <Button onClick={() => setStep(issueReason.minEvidenceCount > 0 ? 'evidence' : 'reason')} color="inherit">
             Back
           </Button>
         )}
         <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
+        {step === 'evidence' && (
+          <Button variant="contained" disabled={!evidenceMet} onClick={() => setStep('details')}>
+            Continue
+          </Button>
+        )}
         {step === 'details' && (
           <Button type="submit" form="order-issue-form" variant="contained" disabled={submitting}>
             {submitting ? 'Submitting…' : 'Submit query'}
@@ -240,8 +267,7 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
 }
 
 // ────────────────────────────────────────────────────────────────
-// General flow — unchanged fixed category list, used when there's no
-// specific order item (payment/payout/account/technical/other).
+// General flow — unchanged
 // ────────────────────────────────────────────────────────────────
 function GeneralQueryForm({ open, onClose, onCreated }) {
   const queryClient = useQueryClient();

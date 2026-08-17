@@ -162,7 +162,7 @@ export default function Sidebar({ handleDrawerToggle, open }) {
           }
         }}
       >
-        <DrawerHeader />
+        {/* <DrawerHeader /> */}
         <Box
           sx={{
             position: 'absolute',

@@ -16,6 +16,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 
 import { currencyConfig } from "@/utils/currency";
+import { getAssetUrl } from '@/utils/getAssetUrl';
 
 import { Countries } from 'src/utils/Countries';
 
@@ -38,6 +39,7 @@ import {
   TextField,
   FormControlLabel,
   Switch,
+  Checkbox,
   Divider,
   InputAdornment,
 } from '@mui/material';
@@ -61,7 +63,8 @@ const isPending = product?.status === 'pending';
 const isRestricted = isPublished || isPending;
 
   const router = useRouter();
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState([]); // newly added files (File objects)
+const [existingImages, setExistingImages] = useState(product?.images || []); // already-uploaded images from DB
   const [openBrandModal, setOpenBrandModal] = useState(false);
 
    const user = useSelector((state) => state.user.user);
@@ -74,6 +77,8 @@ const isRestricted = isPublished || isPending;
     currencyConfig[country]?.symbol || '$';
 
     const [openShippingInfo, setOpenShippingInfo] = useState(false);
+    const [openPickupLocation, setOpenPickupLocation] = useState(false);
+    const [pickupLocations, setPickupLocations] = useState([]);
 
     const [countryOptions, setCountryOptions] = useState([]);
 
@@ -86,6 +91,8 @@ const isRestricted = isPublished || isPending;
   }, []);
 
   const removeImage = (index) => setImages((prev) => prev.filter((_, i) => i !== index));
+const removeExistingImage = (index) =>
+  setExistingImages((prev) => prev.filter((_, i) => i !== index));
 
   React.useEffect(() => {
     return () => images.forEach((f) => URL.revokeObjectURL(f.preview));
@@ -93,6 +100,16 @@ const isRestricted = isPublished || isPending;
 
   React.useEffect(() => {
   Countries().then((data) => setCountryOptions(data || []));
+}, []);
+
+  React.useEffect(() => {
+  api.getPickupLocations()
+    .then((res) => {
+     setPickupLocations(res?.data || []);
+    })
+    .catch((err) => {
+      console.error('Failed to load pickup locations:', err);
+    });
 }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -117,6 +134,59 @@ const { mutate, isPending: isSaving } = useMutation({
   },
 });
 
+  const [savingPickupLocation, setSavingPickupLocation] = useState(false);
+
+  const [pickupForm, setPickupForm] = useState({
+  name: '',
+  streetAddress: '',
+  country: '',
+  state: '',
+  city: '',
+  zipcode: '',
+});
+
+// ✅ moved here, top-level in ProductForm
+const handleSavePickupLocation = async () => {
+  if (!pickupForm.name.trim()) {
+    return toast.error('Enter location name');
+  }
+  if (!pickupForm.streetAddress.trim()) {
+    return toast.error('Enter street address');
+  }
+  if (!pickupForm.country) {
+    return toast.error('Select country');
+  }
+  if (!pickupForm.state.trim()) {
+    return toast.error('Enter state');
+  }
+  if (!pickupForm.city.trim()) {
+    return toast.error('Enter city');
+  }
+
+  try {
+    setSavingPickupLocation(true);
+    const res = await api.createPickupLocation(pickupForm);
+    const newLocation = res?.data;
+    if (!newLocation) throw new Error('Invalid server response');
+
+    setPickupLocations((prev) => [newLocation, ...prev]);
+    setFieldValue('itemLocation.pickupLocation', newLocation);
+    setFieldValue('itemLocation.streetAddress', newLocation.streetAddress || '');
+    setFieldValue('itemLocation.country', newLocation.country || '');
+    setFieldValue('itemLocation.state', newLocation.state || '');
+    setFieldValue('itemLocation.city', newLocation.city || '');
+    setFieldValue('itemLocation.zipcode', newLocation.zipcode || '');
+
+    setOpenPickupLocation(false);
+    setPickupForm({ name: '', streetAddress: '', country: '', state: '', city: '', zipcode: '' });
+    toast.success('Pickup location added');
+  } catch (error) {
+    toast.error(error?.response?.data?.message || 'Failed to save pickup location');
+  } finally {
+    setSavingPickupLocation(false);
+  }
+};
+
   /* ── validation ── */
   const validateBeforeSubmit = (v) => {
     if (!v.title) return toast.error('Product title is required');
@@ -135,20 +205,19 @@ const { mutate, isPending: isSaving } = useMutation({
     ) {
       return toast.error('Discount price must be less than MRP');
     }
-    if (!v.taxes.length) return toast.error('Add at least one tax');
-    for (let i = 0; i < v.taxes.length; i++) {
-      if (!v.taxes[i].taxType) return toast.error(`Select tax type for tax #${i + 1}`);
-      if (v.taxes[i].taxType !== 'NONE' && v.taxes[i].taxRate === '')
-        return toast.error(`Select tax rate for tax #${i + 1}`);
-    }
-    if (!v.shipping_policy) return toast.error('Select shipping policy');
-   if (!v.itemLocation.country) return toast.error('Enter item location country');
-   if (!v.itemLocation.state) return toast.error('Enter item location state');
+    // if (!v.taxes.length) return toast.error('Add at least one tax');
+    // for (let i = 0; i < v.taxes.length; i++) {
+    //   if (!v.taxes[i].taxType) return toast.error(`Select tax type for tax #${i + 1}`);
+    //   if (v.taxes[i].taxType !== 'NONE' && v.taxes[i].taxRate === '')
+    //     return toast.error(`Select tax rate for tax #${i + 1}`);
+    // }
+    if (!v.shipping_policy) return toast.error('Unable to determine shipping policy');
+
    if (!v.additionalDetails.countryOfManufacture) return toast.error('Select country of manufacture');
-if (!v.itemLocation.city) return toast.error('Enter item location city');
-if (!v.itemLocation.streetAddress) return toast.error('Enter street address');
-    if (!v.hasVariations && images.length === 0)
-      return toast.error('Upload at least one product image');
+    if (!v.itemLocation.pickupLocation)
+  return toast.error('Select a pickup location');
+    if (!v.hasVariations && images.length === 0 && existingImages.length === 0)
+            return toast.error('Upload at least one product image');
     if (v.hasVariations) {
       if (!v.variationAttributes.length) return toast.error('Add at least one variation attribute');
       for (let i = 0; i < v.variationAttributes.length; i++) {
@@ -170,7 +239,7 @@ if (!v.itemLocation.streetAddress) return toast.error('Enter street address');
   };
 
   /* ── variation image uploader ── */
-  const VariationImageUploader = ({ images, onChange  , disabled }) => {
+  const VariationImageUploader = ({ images, existingImages, onChange, onChangeExisting, disabled }) => {
     const onDrop = (files) => {
       if (disabled) return;
       const mapped = files.map((f) => Object.assign(f, { preview: URL.createObjectURL(f) }));
@@ -195,8 +264,25 @@ if (!v.itemLocation.streetAddress) return toast.error('Enter street address');
           <Typography variant="caption">Upload Variation Images</Typography>
         </Box>
         <Stack direction="row" spacing={1} mt={1} flexWrap="wrap">
+          {existingImages?.map((img, i) => (
+            <Box key={`existing-${i}`} sx={{ position: 'relative' }}>
+              <Box
+                component="img"
+                src={getAssetUrl(img?.url)}
+                sx={{ width: 60, height: 60, borderRadius: 1, objectFit: 'cover' }}
+              />
+              <IconButton
+                size="small"
+                disabled={disabled}
+                sx={{ position: 'absolute', top: -6, right: -6, bgcolor: '#000', color: '#fff' }}
+                onClick={() => onChangeExisting(existingImages.filter((_, x) => x !== i))}
+              >
+                ✕
+              </IconButton>
+            </Box>
+          ))}
           {images?.map((img, i) => (
-            <Box key={i} sx={{ position: 'relative' }}>
+            <Box key={`new-${i}`} sx={{ position: 'relative' }}>
               <Box
                 component="img"
                 src={img.preview}
@@ -216,6 +302,85 @@ if (!v.itemLocation.streetAddress) return toast.error('Enter street address');
       </Box>
     );
   };
+
+  // ── FedEx standard package limits ──
+const FEDEX_MAX_LENGTH_CM = 274;
+const FEDEX_MAX_LENGTH_GIRTH_CM = 330;
+const FEDEX_MAX_WEIGHT_KG = 68;
+
+const toCm = (value, unit) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+
+  switch (unit) {
+    case 'mm':
+      return n / 10;
+    case 'inch':
+      return n * 2.54;
+    case 'm':
+      return n * 100;
+    case 'cm':
+    default:
+      return n;
+  }
+};
+
+const toKg = (value, unit) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+
+  switch (unit) {
+    case 'g':
+      return n / 1000;
+    case 'lb':
+      return n * 0.45359237;
+    case 'oz':
+      return n * 0.0283495231;
+    case 'kg':
+    default:
+      return n;
+  }
+};
+
+const getAutomaticShippingPolicy = (additionalDetails) => {
+  const length = toCm(
+    additionalDetails?.packageLength,
+    additionalDetails?.dimensionUnit
+  );
+
+  const width = toCm(
+    additionalDetails?.packageWidth,
+    additionalDetails?.dimensionUnit
+  );
+
+  const height = toCm(
+    additionalDetails?.packageHeight,
+    additionalDetails?.dimensionUnit
+  );
+
+  const weight = toKg(
+    additionalDetails?.packageWeight,
+    additionalDetails?.weightUnit
+  );
+
+  const girth = (2 * width) + (2 * height);
+  const lengthAndGirth = length + girth;
+
+  const needsFreight =
+    length > FEDEX_MAX_LENGTH_CM ||
+    lengthAndGirth > FEDEX_MAX_LENGTH_GIRTH_CM ||
+    weight > FEDEX_MAX_WEIGHT_KG;
+
+  return {
+    needsFreight,
+    length,
+    width,
+    height,
+    weight,
+    girth,
+    lengthAndGirth,
+  };
+};
 
   /* ── formik ── */
   const formik = useFormik({
@@ -237,8 +402,6 @@ category: product?.category
   pricingMode: product?.pricingMode || 'declare',
   mrp: product?.mrp || '',
   discountPrice: product?.discountPrice || '',
-  taxes: product?.taxes || [{ taxType: '', taxRate: '' }],
-
   // ── Additional Details ──
   additionalDetails: product?.additionalDetails || {
     packageLength: '',
@@ -258,23 +421,23 @@ category: product?.category
   // ── Variations ──
   hasVariations: product?.hasVariations || false,
   variationAttributes: product?.variationAttributes || [{ name: '', values: [] }],
-  variations: product?.variations || [],
+  variations: (product?.variations || []).map((v) => ({
+      ...v,
+      existingImages: v.images || [], // keep DB images separate from new uploads
+      images: [], // this field now holds only newly-dropped Files for this variation
+    })),
 
   // ── Policies ──
   shipping_policy: product?.shipping_policy || null,
+  freeShipping: product?.freeShipping ?? false,
   handlingTime: product?.handlingTime || 'same_day',
 itemLocation: {
+  pickupLocation: product?.itemLocation?.pickupLocation || null,
   country: product?.itemLocation?.country || '',
     state: product?.itemLocation?.state || '', // ADD
   city: product?.itemLocation?.city || '',
     streetAddress: product?.itemLocation?.streetAddress || '',
   zipcode: product?.itemLocation?.zipcode || '',
-},
-domesticReturns: {
-  accepted: product?.domesticReturns?.accepted ?? true,
-  allowedWithin: product?.domesticReturns?.allowedWithin || '30',
-  shippingPaidBy: product?.domesticReturns?.shippingPaidBy || 'buyer',
-  refundMethod: product?.domesticReturns?.refundMethod || 'money_back',
 },
 internationalReturns: {
   accepted: product?.internationalReturns?.accepted ?? true,
@@ -305,8 +468,6 @@ internationalReturns: {
         pricingMode: values.pricingMode,
         mrp: values.mrp,
         discountPrice: values.discountPrice,
-        taxes: values.taxes,
-
         // ── Additional Details ──
         additionalDetails: {
           packageLength: values.additionalDetails.packageLength,
@@ -324,21 +485,26 @@ internationalReturns: {
         description: values.description,
 
         // ── Variations ──
-        hasVariations: values.hasVariations,
-        variationAttributes: values.variationAttributes,
-        variations: values.variations.map((v) => ({
-          attributes: v.attributes,
-          price: v.price,
-          discountPrice: v.discountPrice || '',
-          sku: v.sku,
-          stock: v.stock,
-        })),
+        // ── Images ──
+          existingImages, // tells backend which already-uploaded images to keep
+
+          // ── Variations ──
+          hasVariations: values.hasVariations,
+          variationAttributes: values.variationAttributes,
+          variations: values.variations.map((v) => ({
+            attributes: v.attributes,
+            price: v.price,
+            discountPrice: v.discountPrice || '',
+            sku: v.sku,
+            stock: v.stock,
+            existingImages: v.existingImages || [], // tells backend which existing variation images to keep
+          })),
 
         // ── Policies ──
         shipping_policy: values.shipping_policy?._id,
+        freeShipping: values.freeShipping,
 handlingTime: values.handlingTime,
 itemLocation: values.itemLocation,
-domesticReturns: values.domesticReturns,
 internationalReturns: values.internationalReturns,
         status: values.status,
       };
@@ -354,6 +520,35 @@ internationalReturns: values.internationalReturns,
   });
 
   const { values, setFieldValue } = formik;
+
+  React.useEffect(() => {
+  if (!shipping_policies.length) return;
+
+  const result = getAutomaticShippingPolicy(values.additionalDetails);
+
+  const requiredPolicyType = result.needsFreight
+    ? 'FREIGHT'
+    : 'COURIER';
+
+  const requiredPolicy = shipping_policies.find(
+    (policy) => policy?.policy_type === requiredPolicyType
+  );
+
+  if (
+    requiredPolicy &&
+    String(values.shipping_policy?._id) !== String(requiredPolicy._id)
+  ) {
+    setFieldValue('shipping_policy', requiredPolicy, false);
+  }
+}, [
+  values.additionalDetails.packageLength,
+  values.additionalDetails.packageWidth,
+  values.additionalDetails.packageHeight,
+  values.additionalDetails.packageWeight,
+  values.additionalDetails.dimensionUnit,
+  values.additionalDetails.weightUnit,
+  shipping_policies,
+]);
 
   const getId = (val) => (typeof val === 'object' ? val?._id : val);
 
@@ -407,6 +602,10 @@ internationalReturns: values.internationalReturns,
     setFieldValue('additionalDetails.customSpecifics', updated);
   };
 
+
+
+  
+
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
@@ -459,33 +658,57 @@ internationalReturns: values.internationalReturns,
                 </Typography>
               </Box>
 
-              {images.length > 0 && (
-                <Grid container spacing={2} mt={2}>
-                  {images.map((file, index) => (
-                    <Grid item xs={4} sm={3} md={2} key={index}>
-                      <Box sx={{ position: 'relative' }}>
-                        <Box
-                          component="img"
-                          src={file.preview}
-                          sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1 }}
-                        />
-                        <IconButton
-                          size="small"
+                {(existingImages.length > 0 || images.length > 0) && (
+                  <Grid container spacing={2} mt={2}>
+                    {existingImages.map((img, index) => (
+                      <Grid item xs={4} sm={3} md={2} key={`existing-${img._id || index}`}>
+                        <Box sx={{ position: 'relative' }}>
+                          <Box
+                            component="img"
+                            src={getAssetUrl(img?.url)}
+                            sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1 }}
+                          />
+                          <IconButton
+                            size="small"
                             disabled={isRestricted}
-                          onClick={() => removeImage(index)}
-                          sx={{
-                            position: 'absolute', top: 4, right: 4,
-                            bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 14,
-                            '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
-                          }}
-                        >
-                          ✕
-                        </IconButton>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
+                            onClick={() => removeExistingImage(index)}
+                            sx={{
+                              position: 'absolute', top: 4, right: 4,
+                              bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 14,
+                              '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                            }}
+                          >
+                            ✕
+                          </IconButton>
+                        </Box>
+                      </Grid>
+                    ))}
+                    {images.map((file, index) => (
+                      <Grid item xs={4} sm={3} md={2} key={`new-${index}`}>
+                        <Box sx={{ position: 'relative' }}>
+                          <Box
+                            component="img"
+                            src={file.preview}
+                            sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1 }}
+                          />
+                          <IconButton
+                            size="small"
+                              disabled={isRestricted}
+                            onClick={() => removeImage(index)}
+                            sx={{
+                              position: 'absolute', top: 4, right: 4,
+                              bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 14,
+                              '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                            }}
+                          >
+                            ✕
+                          </IconButton>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              
             </CardContent>
           </Card>
 
@@ -664,7 +887,7 @@ internationalReturns: values.internationalReturns,
                 )}
 
                 {/* Tax details */}
-                <Grid size={{ xs: 12 }}>
+                {/* <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle1" sx={{ mb: 1 }}>Tax Details</Typography>
                   {values.taxes.map((tax, index) => (
                     <Grid container spacing={2} alignItems="center" key={index} sx={{ mb: 1 }}>
@@ -725,7 +948,7 @@ internationalReturns: values.internationalReturns,
                   >
                     + Add Another Tax
                   </Button>
-                </Grid>
+                </Grid> */}
 
               </Grid>
             </CardContent>
@@ -734,7 +957,7 @@ internationalReturns: values.internationalReturns,
           {/* ═══════════════════ ADDITIONAL DETAILS ═══════════════════ */}
           <Card>
             <CardHeader
-              title="Additional Details"
+              title="packing Details"
               subheader="Help buyers find your listing — the more specifics you provide, the better your search visibility."
             />
             <CardContent>
@@ -1087,13 +1310,17 @@ internationalReturns: values.internationalReturns,
                         />
                       </Grid>
                       <Grid size={{ xs: 12, md: 3 }}>
-                        <VariationImageUploader
-                          images={variant.images}
-                          disabled={isRestricted}
-                          onChange={(imgs) =>
-                            setFieldValue(`variations[${index}].images`, imgs)
-                          }
-                        />
+                         <VariationImageUploader
+                            images={variant.images}
+                            existingImages={variant.existingImages}
+                            disabled={isRestricted}
+                            onChange={(imgs) =>
+                              setFieldValue(`variations[${index}].images`, imgs)
+                            }
+                            onChangeExisting={(imgs) =>
+                              setFieldValue(`variations[${index}].existingImages`, imgs)
+                            }
+                          />
                       </Grid>
                     </Grid>
                   ))}
@@ -1109,29 +1336,23 @@ internationalReturns: values.internationalReturns,
   <CardContent>
     <Stack spacing={3}>
 
-      {/* Shipping Policy + Handling Time */}
-      <Grid container spacing={2} alignItems="center">
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Autocomplete
-              fullWidth
-              options={shipping_policies}
-              disabled={isRestricted}
-              getOptionLabel={(o) => o?.name || ''}
-              value={values.shipping_policy}
-              onChange={(_, v) => setFieldValue('shipping_policy', v)}
-              renderInput={(params) => <TextField {...params} label="Shipping Policy" />}
-            />
-            {values.shipping_policy && (
-              <Tooltip title="View shipping policy details">
-                <IconButton size="small" onClick={() => setOpenShippingInfo(true)}>
-                  <InfoOutlinedIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={values.freeShipping}
+                    disabled={isRestricted}
+                    onChange={(e) =>
+                      setFieldValue('freeShipping', e.target.checked)
+                    }
+                  />
+                }
+                label="Free Shipping"
+              />
+     
+        
+          <Divider />
+          <Grid container spacing={2}>
+        <Grid  size={{ xs: 12 }}>
           <TextField
             select fullWidth label="Handling Time"
             disabled={isRestricted}
@@ -1154,77 +1375,121 @@ internationalReturns: values.internationalReturns,
               <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
             ))}
           </TextField>
-        </Grid>
-      </Grid>
+        </Grid> </Grid>
+ 
 
       <Divider />
 
-      {/* Item Location */}
-      <Box>
-        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>Item Location</Typography>
-        <Grid container spacing={2}>
+      {/* Ship From */}
+<Box>
+  <Typography
+    variant="subtitle2"
+    sx={{ mb: 1.5, fontWeight: 600 }}
+  >
+    Ship From
+  </Typography>
 
-           {/* Street Address */}
-    <Grid size={{ xs: 12 }}>
+  <Autocomplete
+    fullWidth
+    options={[
+      ...pickupLocations,
+      {
+        _id: '__add_new__',
+        name: '+ Add New Pickup Location',
+        isAddNew: true,
+      },
+    ]}
+    disabled={isRestricted}
+    value={values.itemLocation.pickupLocation}
+    getOptionLabel={(option) => {
+      if (option?.isAddNew) {
+        return option.name;
+      }
+
+      return option?.name || '';
+    }}
+    isOptionEqualToValue={(option, value) =>
+      String(option?._id) === String(value?._id)
+    }
+    onChange={(_, value) => {
+      if (!value) {
+        setFieldValue('itemLocation.pickupLocation', null);
+        return;
+      }
+
+      if (value.isAddNew) {
+        setOpenPickupLocation(true);
+        return;
+      }
+
+      setFieldValue('itemLocation.pickupLocation', value);
+
+      setFieldValue(
+        'itemLocation.streetAddress',
+        value.streetAddress || ''
+      );
+
+      setFieldValue(
+        'itemLocation.country',
+        value.country || ''
+      );
+
+      setFieldValue(
+        'itemLocation.state',
+        value.state || ''
+      );
+
+      setFieldValue(
+        'itemLocation.city',
+        value.city || ''
+      );
+
+      setFieldValue(
+        'itemLocation.zipcode',
+        value.zipcode || ''
+      );
+    }}
+    renderOption={(props, option) => (
+      <li {...props} key={option._id}>
+        {option.isAddNew ? (
+          <Typography
+            sx={{
+              fontWeight: 600,
+              color: 'primary.main',
+            }}
+          >
+            + Add New Pickup Location
+          </Typography>
+        ) : (
+          <Box>
+            <Typography variant="body2" fontWeight={600}>
+              {option.name}
+            </Typography>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+            >
+              {option.city}, {option.state}, {option.country}
+            </Typography>
+          </Box>
+        )}
+      </li>
+    )}
+    renderInput={(params) => (
       <TextField
-        fullWidth
-        label="Street Address"
-        disabled={isRestricted}
-        value={values.itemLocation.streetAddress || ''}
-        onChange={(e) =>
-          setFieldValue('itemLocation.streetAddress', e.target.value)
-        }
-        placeholder="e.g. 123  Road Name"
+        {...params}
+        label="Ship From"
+        placeholder="Select pickup location"
       />
-    </Grid>
-          
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Autocomplete
-  fullWidth
-  options={countryOptions}
-  disabled={isRestricted}
-  getOptionLabel={(o) => o?.label || ''}
-  value={countryOptions.find((c) => c.label === values.itemLocation.country) || null}
-  onChange={(_, v) => setFieldValue('itemLocation.country', v?.label || '')}
-  renderInput={(params) => (
-    <TextField {...params} label="Country or Region" placeholder="e.g. United Arab Emirates" />
-  )}
-/>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-  <TextField
-    fullWidth label="City"
-    disabled={isRestricted}
-    value={values.itemLocation.city}
-    onChange={(e) => setFieldValue('itemLocation.city', e.target.value)}
-    placeholder="e.g. Dubai"
+    )}
   />
-</Grid>
-<Grid size={{ xs: 12, md: 4 }}>
-  <TextField
-    fullWidth label="State / Province"
-    disabled={isRestricted}
-    value={values.itemLocation.state}
-    onChange={(e) => setFieldValue('itemLocation.state', e.target.value)}
-    placeholder="e.g. Dubai Emirate"
-  />
-</Grid>
-<Grid size={{ xs: 12, md: 4 }}>
-  <TextField
-    fullWidth label="Pincode / Zipcode (Optional)"
-    disabled={isRestricted}
-    value={values.itemLocation.zipcode}
-    onChange={(e) => setFieldValue('itemLocation.zipcode', e.target.value)}
-    placeholder="e.g. 400001"
-  />
-</Grid>
-        </Grid>
-      </Box>
+</Box>
 
       <Divider />
 
       {/* Domestic Returns */}
-      <Box>
+      {/* <Box>
         <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>Domestic Returns</Typography>
         <Card variant="outlined" sx={{ p: 2 }}>
           <Stack spacing={2}>
@@ -1286,11 +1551,11 @@ internationalReturns: values.internationalReturns,
             )}
           </Stack>
         </Card>
-      </Box>
+      </Box> */}
 
       {/* International Returns */}
       <Box>
-        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>International Returns</Typography>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>Returns</Typography>
         <Card variant="outlined" sx={{ p: 2 }}>
           <Stack spacing={2}>
             <FormControlLabel
@@ -1435,6 +1700,126 @@ internationalReturns: values.internationalReturns,
     </Button>
   </DialogActions>
 </Dialog>
+
+                <Dialog
+  open={openPickupLocation}
+  onClose={() => setOpenPickupLocation(false)}
+  fullWidth
+  maxWidth="sm"
+>
+  <DialogTitle>
+    Add Pickup Location
+  </DialogTitle>
+
+  <DialogContent>
+    <Stack spacing={2} sx={{ mt: 1 }}>
+
+      <TextField
+        fullWidth
+        label="Location Name"
+        placeholder="e.g. Dubai Warehouse"
+        value={pickupForm.name}
+        onChange={(e) =>
+          setPickupForm({
+            ...pickupForm,
+            name: e.target.value,
+          })
+        }
+      />
+
+      <TextField
+        fullWidth
+        label="Street Address"
+        value={pickupForm.streetAddress}
+        onChange={(e) =>
+          setPickupForm({
+            ...pickupForm,
+            streetAddress: e.target.value,
+          })
+        }
+      />
+
+      <Autocomplete
+        fullWidth
+        options={countryOptions}
+        getOptionLabel={(o) => o?.label || ''}
+        value={
+          countryOptions.find(
+            (c) => c.label === pickupForm.country
+          ) || null
+        }
+        onChange={(_, value) =>
+          setPickupForm({
+            ...pickupForm,
+            country: value?.label || '',
+          })
+        }
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Country"
+          />
+        )}
+      />
+
+      <TextField
+        fullWidth
+        label="State / Province"
+        value={pickupForm.state}
+        onChange={(e) =>
+          setPickupForm({
+            ...pickupForm,
+            state: e.target.value,
+          })
+        }
+      />
+
+      <TextField
+        fullWidth
+        label="City"
+        value={pickupForm.city}
+        onChange={(e) =>
+          setPickupForm({
+            ...pickupForm,
+            city: e.target.value,
+          })
+        }
+      />
+
+      <TextField
+        fullWidth
+        label="Pincode / Zipcode"
+        value={pickupForm.zipcode}
+        onChange={(e) =>
+          setPickupForm({
+            ...pickupForm,
+            zipcode: e.target.value,
+          })
+        }
+      />
+
+    </Stack>
+  </DialogContent>
+
+  <DialogActions>
+    <Button
+      onClick={() => setOpenPickupLocation(false)}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      variant="contained"
+      onClick={handleSavePickupLocation}
+      disabled={savingPickupLocation}
+    >
+      {savingPickupLocation
+        ? 'Saving...'
+        : 'Save Location'}
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </FormikProvider>
   );
 }

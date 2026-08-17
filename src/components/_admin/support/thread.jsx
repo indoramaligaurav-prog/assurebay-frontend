@@ -15,7 +15,8 @@ import {
   Divider,
   MenuItem,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  Alert
 } from '@mui/material';
 // routing
 import { useRouter } from 'next/navigation';
@@ -34,10 +35,10 @@ import {
   SUPPORT_CATEGORY_LABELS,
   SUPPORT_RAISED_BY_ROLE_LABELS
 } from 'src/constants/support';
+import { ISSUE_REASON_LABELS, DECISION_OPTIONS, DECISION_LABELS } from 'src/constants/issue-taxonomy';
 
 SupportThreadAdmin.propTypes = { ticketId: PropTypes.string };
 
-// status options for the dropdown, excluding the "All" entry from the tabs list
 const STATUS_OPTIONS = SUPPORT_STATUS_TABS.filter((s) => s.value);
 
 export default function SupportThreadAdmin({ ticketId }) {
@@ -46,11 +47,21 @@ export default function SupportThreadAdmin({ ticketId }) {
   const user = useSelector((state) => state.user.user);
   const [reply, setReply] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
+  const [decisionNote, setDecisionNote] = useState('');
 
   const { data, isPending: isLoading } = useQuery({
     queryKey: ['admin-support-ticket', ticketId],
     queryFn: () => api.adminGetSupportTicketById(ticketId),
     enabled: Boolean(ticketId)
+  });
+
+  const ticket = data?.ticket;
+
+  // policy context — only fetched for order_issue tickets tied to an item
+  const { data: eligibility } = useQuery({
+    queryKey: ['admin-ticket-eligibility', ticketId],
+    queryFn: () => api.adminGetTicketEligibility(ticketId),
+    enabled: Boolean(ticket?.relatedOrderItem)
   });
 
   const invalidateAll = () => {
@@ -77,6 +88,14 @@ export default function SupportThreadAdmin({ ticketId }) {
     onSuccess: invalidateAll
   });
 
+  const { mutate: decide, isPending: deciding } = useMutation({
+    mutationFn: (decision) => api.adminDecideSupportTicket({ id: ticketId, decision, note: decisionNote }),
+    onSuccess: () => {
+      setDecisionNote('');
+      invalidateAll();
+    }
+  });
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -85,18 +104,20 @@ export default function SupportThreadAdmin({ ticketId }) {
     );
   }
 
-  const ticket = data?.ticket;
   const messages = data?.messages || [];
   if (!ticket) return null;
 
   const closed = ticket.status === 'closed';
   const assignedToMe = ticket.assignedTo === user?._id;
+  const canDecide = ticket.category === 'order_issue' && !ticket.resolution?.decision && !closed;
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!reply.trim() || closed) return;
     sendReply({ message: reply, isInternalNote });
   };
+
+  const reasonPolicy = eligibility?.reasons?.find((r) => r.code === ticket.issueReason)?.policy;
 
   return (
     <Box sx={{ maxWidth: 760, mx: 'auto' }}>
@@ -119,6 +140,12 @@ export default function SupportThreadAdmin({ ticketId }) {
               {ticket.ticketNo} · {SUPPORT_CATEGORY_LABELS[ticket.category] || ticket.category} · raised by{' '}
               {ticket.raisedBy?.name} ({SUPPORT_RAISED_BY_ROLE_LABELS[ticket.raisedBy?.role]}, {ticket.raisedBy?.email})
             </Typography>
+            {ticket.issueReason && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                Reason: {ISSUE_REASON_LABELS[ticket.issueReason] || ticket.issueReason}
+                {ticket.subReason ? ` · ${ticket.subReason}` : ''}
+              </Typography>
+            )}
           </Box>
         </Stack>
 
@@ -158,6 +185,109 @@ export default function SupportThreadAdmin({ ticketId }) {
             </Button>
           )}
         </Stack>
+
+        {/* ── Evidence gallery ──────────────────────────────────────── */}
+        {ticket.evidence?.length > 0 && (
+          <>
+            <Divider sx={{ mb: 2 }} />
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+              Evidence ({ticket.evidence.length} photo{ticket.evidence.length === 1 ? '' : 's'})
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1} sx={{ mb: 2 }}>
+              {ticket.evidence.map((ev, i) => (
+                <Box
+                  key={i}
+                  component="a"
+                  href={`${process.env.NEXT_PUBLIC_API_URL}${ev.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    display: 'block'
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={`${process.env.NEXT_PUBLIC_API_URL}${ev.url}`}
+                    alt="Evidence"
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </Box>
+              ))}
+            </Stack>
+          </>
+        )}
+
+        {/* ── Decision panel — order_issue tickets only ─────────────── */}
+        {ticket.category === 'order_issue' && (
+          <>
+            <Divider sx={{ mb: 2 }} />
+            {ticket.resolution?.decision ? (
+              <Alert
+                severity={ticket.resolution.decision === 'declined' ? 'error' : 'success'}
+                sx={{ mb: 2 }}
+              >
+                <strong>{DECISION_LABELS[ticket.resolution.decision]}</strong> by{' '}
+                {new Date(ticket.resolution.decidedAt).toLocaleString()}
+                {ticket.resolution.note ? ` — "${ticket.resolution.note}"` : ''}
+                {ticket.resolution.policyAligned === false && (
+                  <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                    Note: this decision overrides the product's stated return policy.
+                  </Typography>
+                )}
+              </Alert>
+            ) : (
+              canDecide && (
+                <Box sx={{ mb: 2 }}>
+                  {reasonPolicy && (
+                    <Stack direction="row" spacing={0.75} flexWrap="wrap" rowGap={0.5} sx={{ mb: 1.5 }}>
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        color={reasonPolicy.returnsAccepted ? 'success' : 'default'}
+                        label={reasonPolicy.returnsAccepted ? 'Policy: returns accepted' : 'Policy: no standard returns'}
+                      />
+                      {reasonPolicy.allowedWithinDays && (
+                        <Chip size="small" variant="outlined" label={`Within ${reasonPolicy.allowedWithinDays} days`} />
+                      )}
+                      {reasonPolicy.shippingPaidBy && (
+                        <Chip size="small" variant="outlined" label={`${reasonPolicy.shippingPaidBy} pays shipping`} />
+                      )}
+                      {reasonPolicy.isInternational && <Chip size="small" variant="outlined" label="International" />}
+                    </Stack>
+                  )}
+                  <TextField
+                    size="small"
+                    fullWidth
+                    placeholder="Optional note shown to the buyer/vendor with the decision"
+                    value={decisionNote}
+                    onChange={(e) => setDecisionNote(e.target.value)}
+                    sx={{ mb: 1.5 }}
+                  />
+                  <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
+                    {DECISION_OPTIONS.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        size="small"
+                        variant="outlined"
+                        color={opt.color}
+                        disabled={deciding}
+                        onClick={() => decide(opt.value)}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Box>
+              )
+            )}
+          </>
+        )}
 
         <Divider sx={{ mb: 2 }} />
 

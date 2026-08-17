@@ -2,97 +2,36 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 // mui
-import {
-  Box,
-  Card,
-  Chip,
-  Typography,
-  TextField,
-  Button,
-  Stack,
-  CircularProgress,
-  IconButton,
-  Divider,
-  MenuItem,
-  FormControlLabel,
-  Checkbox,
-  Alert
-} from '@mui/material';
+import { Box, Card, Chip, Typography, TextField, Button, Stack, CircularProgress, IconButton, Divider } from '@mui/material';
 // routing
 import { useRouter } from 'next/navigation';
-// redux
-import { useSelector } from 'react-redux';
 // icons
 import { FiArrowLeft, FiSend } from 'react-icons/fi';
 // api
 import * as api from 'src/services';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 // constants
-import {
-  SUPPORT_STATUS_TABS,
-  SUPPORT_STATUS_LABELS,
-  SUPPORT_STATUS_CHIP_COLOR,
-  SUPPORT_CATEGORY_LABELS,
-  SUPPORT_RAISED_BY_ROLE_LABELS
-} from 'src/constants/support';
-import { ISSUE_REASON_LABELS, DECISION_OPTIONS, DECISION_LABELS } from 'src/constants/issue-taxonomy';
+import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_CHIP_COLOR, SUPPORT_CATEGORY_LABELS } from 'src/constants/support';
 
-SupportThreadAdmin.propTypes = { ticketId: PropTypes.string };
+SupportThread.propTypes = { ticketId: PropTypes.string };
 
-const STATUS_OPTIONS = SUPPORT_STATUS_TABS.filter((s) => s.value);
-
-export default function SupportThreadAdmin({ ticketId }) {
+export default function SupportThread({ ticketId }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const user = useSelector((state) => state.user.user);
   const [reply, setReply] = useState('');
-  const [isInternalNote, setIsInternalNote] = useState(false);
-  const [decisionNote, setDecisionNote] = useState('');
 
   const { data, isPending: isLoading } = useQuery({
-    queryKey: ['admin-support-ticket', ticketId],
-    queryFn: () => api.adminGetSupportTicketById(ticketId),
+    queryKey: ['user-support-ticket', ticketId],
+    queryFn: () => api.userGetSupportTicketById(ticketId),
     enabled: Boolean(ticketId)
   });
 
-  const ticket = data?.ticket;
-
-  // policy context — only fetched for order_issue tickets tied to an item
-  const { data: eligibility } = useQuery({
-    queryKey: ['admin-ticket-eligibility', ticketId],
-    queryFn: () => api.adminGetTicketEligibility(ticketId),
-    enabled: Boolean(ticket?.relatedOrderItem)
-  });
-
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['admin-support-ticket', ticketId] });
-    queryClient.invalidateQueries({ queryKey: ['admin-support-tickets'] });
-  };
-
   const { mutate: sendReply, isPending: sending } = useMutation({
-    mutationFn: (payload) => api.adminReplySupportTicket({ id: ticketId, payload }),
+    mutationFn: (payload) => api.userReplySupportTicket({ id: ticketId, payload }),
     onSuccess: () => {
       setReply('');
-      setIsInternalNote(false);
-      invalidateAll();
-    }
-  });
-
-  const { mutate: updateStatus, isPending: updatingStatus } = useMutation({
-    mutationFn: (status) => api.adminUpdateSupportTicketStatus({ id: ticketId, status }),
-    onSuccess: invalidateAll
-  });
-
-  const { mutate: assignToMe, isPending: assigning } = useMutation({
-    mutationFn: () => api.adminAssignSupportTicket({ id: ticketId, adminId: user?._id }),
-    onSuccess: invalidateAll
-  });
-
-  const { mutate: decide, isPending: deciding } = useMutation({
-    mutationFn: (decision) => api.adminDecideSupportTicket({ id: ticketId, decision, note: decisionNote }),
-    onSuccess: () => {
-      setDecisionNote('');
-      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ['user-support-ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['user-support-tickets'] });
     }
   });
 
@@ -104,25 +43,21 @@ export default function SupportThreadAdmin({ ticketId }) {
     );
   }
 
+  const ticket = data?.ticket;
   const messages = data?.messages || [];
   if (!ticket) return null;
-
   const closed = ticket.status === 'closed';
-  const assignedToMe = ticket.assignedTo === user?._id;
-  const canDecide = ticket.category === 'order_issue' && !ticket.resolution?.decision && !closed;
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!reply.trim() || closed) return;
-    sendReply({ message: reply, isInternalNote });
+    sendReply({ message: reply });
   };
 
-  const reasonPolicy = eligibility?.reasons?.find((r) => r.code === ticket.issueReason)?.policy;
-
   return (
-    <Box sx={{ maxWidth: 760, mx: 'auto' }}>
+    <Box sx={{ maxWidth: 720, mx: 'auto', py: 4, px: 2 }}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <IconButton onClick={() => router.push('/admin/support')} size="small">
+        <IconButton onClick={() => router.push('/support')} size="small">
           <FiArrowLeft />
         </IconButton>
         <Typography variant="body2" color="text.secondary">
@@ -131,124 +66,56 @@ export default function SupportThreadAdmin({ ticketId }) {
       </Stack>
 
       <Card sx={{ p: 3 }}>
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 2 }}>
           <Box>
             <Typography variant="h6" fontWeight={600}>
               {ticket.subject}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {ticket.ticketNo} · {SUPPORT_CATEGORY_LABELS[ticket.category] || ticket.category} · raised by{' '}
-              {ticket.raisedBy?.name} ({SUPPORT_RAISED_BY_ROLE_LABELS[ticket.raisedBy?.role]}, {ticket.raisedBy?.email})
+              {ticket.ticketNo} · {SUPPORT_CATEGORY_LABELS[ticket.category] || ticket.category}
             </Typography>
-            {ticket.issueReason && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                Reason: {ISSUE_REASON_LABELS[ticket.issueReason] || ticket.issueReason}
-                {ticket.subReason ? ` · ${ticket.subReason}` : ''}
-              </Typography>
-            )}
           </Box>
-        </Stack>
-
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2, flexWrap: 'wrap', rowGap: 1 }}>
-          <TextField
-            select
-            size="small"
-            label="Status"
-            value={ticket.status}
-            onChange={(e) => updateStatus(e.target.value)}
-            disabled={updatingStatus}
-            sx={{ minWidth: 180 }}
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </MenuItem>
-            ))}
-          </TextField>
-
           <Chip
             size="small"
             label={SUPPORT_STATUS_LABELS[ticket.status]}
             color={SUPPORT_STATUS_CHIP_COLOR[ticket.status]}
             variant="outlined"
           />
-
-          <Box sx={{ flexGrow: 1 }} />
-
-          {ticket.assignedTo ? (
-            <Typography variant="caption" color="text.secondary">
-              {assignedToMe ? 'Assigned to you' : 'Assigned'}
-            </Typography>
-          ) : (
-            <Button size="small" variant="outlined" onClick={() => assignToMe()} disabled={assigning}>
-              Assign to me
-            </Button>
-          )}
         </Stack>
 
-        {/* ── Decision panel — order_issue tickets only ─────────────── */}
-        {ticket.category === 'order_issue' && (
+        {ticket.evidence?.length > 0 && (
           <>
             <Divider sx={{ mb: 2 }} />
-            {ticket.resolution?.decision ? (
-              <Alert
-                severity={ticket.resolution.decision === 'declined' ? 'error' : 'success'}
-                sx={{ mb: 2 }}
-              >
-                <strong>{DECISION_LABELS[ticket.resolution.decision]}</strong> by{' '}
-                {new Date(ticket.resolution.decidedAt).toLocaleString()}
-                {ticket.resolution.note ? ` — "${ticket.resolution.note}"` : ''}
-                {ticket.resolution.policyAligned === false && (
-                  <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                    Note: this decision overrides the product's stated return policy.
-                  </Typography>
-                )}
-              </Alert>
-            ) : (
-              canDecide && (
-                <Box sx={{ mb: 2 }}>
-                  {reasonPolicy && (
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" rowGap={0.5} sx={{ mb: 1.5 }}>
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        color={reasonPolicy.returnsAccepted ? 'success' : 'default'}
-                        label={reasonPolicy.returnsAccepted ? 'Policy: returns accepted' : 'Policy: no standard returns'}
-                      />
-                      {reasonPolicy.allowedWithinDays && (
-                        <Chip size="small" variant="outlined" label={`Within ${reasonPolicy.allowedWithinDays} days`} />
-                      )}
-                      {reasonPolicy.shippingPaidBy && (
-                        <Chip size="small" variant="outlined" label={`${reasonPolicy.shippingPaidBy} pays shipping`} />
-                      )}
-                      {reasonPolicy.isInternational && <Chip size="small" variant="outlined" label="International" />}
-                    </Stack>
-                  )}
-                  <TextField
-                    size="small"
-                    fullWidth
-                    placeholder="Optional note shown to the buyer/vendor with the decision"
-                    value={decisionNote}
-                    onChange={(e) => setDecisionNote(e.target.value)}
-                    sx={{ mb: 1.5 }}
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+              Your evidence ({ticket.evidence.length} photo{ticket.evidence.length === 1 ? '' : 's'})
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1} sx={{ mb: 2 }}>
+              {ticket.evidence.map((ev, i) => (
+                <Box
+                  key={i}
+                  component="a"
+                  href={`${process.env.NEXT_PUBLIC_API_URL}${ev.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    display: 'block'
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={`${process.env.NEXT_PUBLIC_API_URL}${ev.url}`}
+                    alt="Evidence"
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
-                    {DECISION_OPTIONS.map((opt) => (
-                      <Button
-                        key={opt.value}
-                        size="small"
-                        variant="outlined"
-                        color={opt.color}
-                        disabled={deciding}
-                        onClick={() => decide(opt.value)}
-                      >
-                        {opt.label}
-                      </Button>
-                    ))}
-                  </Stack>
                 </Box>
-              )
-            )}
+              ))}
+            </Stack>
           </>
         )}
 
@@ -256,7 +123,7 @@ export default function SupportThreadAdmin({ ticketId }) {
 
         <Stack spacing={1.5} sx={{ maxHeight: 420, overflowY: 'auto', mb: 2, px: 0.5 }}>
           {messages.map((m, i) => {
-            const mine = m.sender.role === 'admin';
+            const mine = m.sender.role === 'user';
             return (
               <Box key={i} sx={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                 <Box
@@ -265,18 +132,13 @@ export default function SupportThreadAdmin({ ticketId }) {
                     px: 1.75,
                     py: 1,
                     borderRadius: 2,
-                    bgcolor: m.isInternalNote ? 'warning.light' : mine ? 'primary.main' : 'action.hover',
-                    color: m.isInternalNote ? 'warning.contrastText' : mine ? 'primary.contrastText' : 'text.primary'
+                    bgcolor: mine ? 'primary.main' : 'action.hover',
+                    color: mine ? 'primary.contrastText' : 'text.primary'
                   }}
                 >
-                  {m.isInternalNote && (
-                    <Typography variant="caption" fontWeight={700} sx={{ display: 'block', mb: 0.25 }}>
-                      INTERNAL NOTE
-                    </Typography>
-                  )}
                   <Typography variant="body2">{m.message}</Typography>
                   <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.75 }}>
-                    {m.sender.name} · {new Date(m.createdAt).toLocaleString()}
+                    {mine ? 'You' : 'Support'} · {new Date(m.createdAt).toLocaleString()}
                   </Typography>
                 </Box>
               </Box>
@@ -287,37 +149,20 @@ export default function SupportThreadAdmin({ ticketId }) {
         <Divider sx={{ mb: 2 }} />
 
         <form onSubmit={handleSend}>
-          <Stack spacing={1}>
-            <Stack direction="row" spacing={1.5} alignItems="flex-end">
-              <TextField
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                placeholder={closed ? 'This ticket is closed' : 'Type a reply…'}
-                disabled={closed}
-                fullWidth
-                multiline
-                maxRows={4}
-                size="small"
-              />
-              <Button type="submit" variant="contained" endIcon={<FiSend />} disabled={sending || closed}>
-                Send
-              </Button>
-            </Stack>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={isInternalNote}
-                  onChange={(e) => setIsInternalNote(e.target.checked)}
-                  disabled={closed}
-                />
-              }
-              label={
-                <Typography variant="caption" color="text.secondary">
-                  Internal note (hidden from the customer/vendor)
-                </Typography>
-              }
+          <Stack direction="row" spacing={1.5} alignItems="flex-end">
+            <TextField
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              placeholder={closed ? 'This ticket is closed' : 'Type a reply…'}
+              disabled={closed}
+              fullWidth
+              multiline
+              maxRows={4}
+              size="small"
             />
+            <Button type="submit" variant="contained" endIcon={<FiSend />} disabled={sending || closed}>
+              Send
+            </Button>
           </Stack>
         </form>
       </Card>

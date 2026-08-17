@@ -1042,7 +1042,14 @@ export const adminAssignSupportTicket = async ({ id, adminId }) => {
 
 // ---- user support ----
 export const userRaiseSupportTicket = async (payload) => {
-  const { data } = await http.post(`/support/tickets`, payload);
+  const isFormData = payload instanceof FormData;
+  const { data } = await http.post(`/support/tickets`, payload, {
+    // explicitly override in case your `http` instance sets a default
+    // Content-Type: application/json header — that would break the
+    // multipart boundary otherwise. `undefined` lets axios set its own
+    // multipart boundary automatically.
+    headers: isFormData ? { 'Content-Type': undefined } : { 'Content-Type': 'application/json' }
+  });
   return data;
 };
 
@@ -1078,5 +1085,15 @@ export const adminGetTicketEligibility = async (ticketId) => {
  
 export const adminDecideSupportTicket = async ({ id, decision, note }) => {
   const { data } = await http.patch(`/admin/support/tickets/${id}/decision`, { decision, note });
+  return data;
+};
+
+export const getPickupLocations = async () => {
+  const { data } = await http.get('/vendor/pickup-locations');
+  return data;
+};
+
+export const createPickupLocation = async (pickupForm) => {
+  const { data } = await http.post('/vendor/pickup-locations', pickupForm);
   return data;
 };

@@ -35,30 +35,29 @@ export default function CreateListingModal({ open, onClose, isVendor }) {
     if (categoryId) params.set('category', categoryId);
 
     router.push(`/${isVendor ? 'vendor' : 'admin'}/products/add?${params.toString()}`);
-    onClose();
-    setTitle('');
-    setCondition('');
-  };
-
-  const handleContinue = async () => {
-    if (!title.trim()) return toast.error('Enter a product title');
-    if (!condition) return toast.error('Select condition');
-
-    setLoading(true);
-    try {
-      const res = await api.suggestCategoryFromTitle(title.trim());
-      const suggestedId = res?.data?.category?._id || null;
-      buildUrlAndGo(suggestedId);
-    } catch (err) {
-      // Category suggestion failing shouldn't block listing creation
-      buildUrlAndGo(null);
-    } finally {
+    setTimeout(() => {
       setLoading(false);
-    }
+    }, 8000);
   };
+
+const handleContinue = async () => {
+  if (!title.trim()) return toast.error('Enter a product title');
+  if (!condition) return toast.error('Select condition');
+
+  setLoading(true);
+  try {
+    const res = await api.suggestCategoryFromTitle(title.trim());
+    const suggestedId = res?.data?.category?._id || null;
+    buildUrlAndGo(suggestedId);
+  } catch (err) {
+    // Category suggestion failing shouldn't block listing creation
+    buildUrlAndGo(null);
+  }
+  // no finally/setLoading(false) here — stays loading until navigation unmounts this component
+};
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+   <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle>Start a New Listing</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -68,6 +67,7 @@ export default function CreateListingModal({ open, onClose, isVendor }) {
             label="Condition"
             value={condition}
             onChange={(e) => setCondition(e.target.value)}
+             disabled={loading}
           >
             {CONDITIONS.map((c) => (
               <MenuItem key={c.value} value={c.value}>
@@ -81,6 +81,7 @@ export default function CreateListingModal({ open, onClose, isVendor }) {
             placeholder="e.g. Apple iPhone 14 Pro Max 256GB"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+                disabled={loading}
           />
         </Stack>
       </DialogContent>
@@ -91,10 +92,10 @@ export default function CreateListingModal({ open, onClose, isVendor }) {
         <Button
           variant="contained"
           onClick={handleContinue}
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={16} /> : null}
+            disabled={loading || !title.trim() || !condition}
+          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
         >
-          Continue
+               {loading ? 'Finding category…' : 'Continue'}
         </Button>
       </DialogActions>
     </Dialog>

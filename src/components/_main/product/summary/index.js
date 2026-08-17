@@ -28,7 +28,7 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 import { useState, useEffect, useMemo } from 'react';
 import * as api from 'src/services';
 import { Countries } from '@/utils/Countries';
-
+import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/utils/formatPrice';
 
 
@@ -85,7 +85,9 @@ const QUOTE_TEMPLATES = [
 
 export default function ProductDetailsSummary({ product, selectedAttrs, setSelectedAttrs, activeVariation }) {
   const dispatch = useDispatch();
+    const router = useRouter();
   const { user } = useSelector((state) => state.user);
+  const needsVariantSelection = product.hasVariations && !activeVariation;
   const { code: currency } = useSelector((state) => state.currency);
   const [shippingPolicyType, setShippingPolicyType] = useState(null);
   const { checkout } = useSelector(({ product }) => product);
@@ -179,22 +181,32 @@ export default function ProductDetailsSummary({ product, selectedAttrs, setSelec
   const isMaxQty = cartItem?.quantity >= stock;
   
 
+  const buildCartItem = () => ({
+    pid: product._id,
+    name: product.title,
+    sku,
+    slug: product.slug,
+    stockQuantity: stock,
+    image: getAssetUrl(activeVariation?.images?.[0]?.url || product.images[0].url),
+    quantity: qty,
+    vendorid: product.vendor,
+    price: effectivePrice,
+    subtotal: effectivePrice * qty,
+    shippingPolicyId: product.shipping_policy,
+  });
+
   const handleAddCart = () => {
+    if (needsVariantSelection) return toast.error('Please select all options first');
     if (stock < 1) return toast.error('Out of stock');
-    dispatch(addCart({
-      pid: product._id,
-      name: product.title,
-      sku,
-      slug: product.slug,
-      stockQuantity: stock,
-      image: getAssetUrl(activeVariation?.images?.[0]?.url || product.images[0].url),
-      quantity: qty,
-      vendorid: product.vendor,
-    price: effectivePrice,        // ← was rawPrice
-    subtotal: effectivePrice * qty, // ← was rawPrice * qty
-      shippingPolicyId: product.shipping_policy,
-    }));
+    dispatch(addCart(buildCartItem()));
     toast.success('Added to cart');
+  };
+
+  const handleBuyNow = () => {
+    if (needsVariantSelection) return toast.error('Please select all options first');
+    if (stock < 1) return toast.error('Out of stock');
+    dispatch(addCart(buildCartItem()));
+    router.push('/checkout');
   };
 
   // ── Load countries when quote opens ──
@@ -328,10 +340,25 @@ export default function ProductDetailsSummary({ product, selectedAttrs, setSelec
               onIncrease={() => setQty((q) => q + 1)}
               onDecrease={() => setQty((q) => Math.max(1, q - 1))}
             />
-            <Button startIcon={<FiShoppingCart />} variant="contained" disabled={stock === 0 || isMaxQty} onClick={handleAddCart}>
+            {needsVariantSelection && (
+              <Typography variant="body2" color="error.main">
+                Please select all options above to continue
+              </Typography>
+            )}
+            <Button
+              startIcon={<FiShoppingCart />}
+              variant="contained"
+              disabled={stock === 0 || isMaxQty || needsVariantSelection}
+              onClick={handleAddCart}
+            >
               Add to Cart
             </Button>
-            <Button startIcon={<IoBagCheckOutline />} variant="outlined" disabled={stock === 0}>
+            <Button
+              startIcon={<IoBagCheckOutline />}
+              variant="outlined"
+              disabled={stock === 0 || needsVariantSelection}
+              onClick={handleBuyNow}
+            >
               Buy Now
             </Button>
           </>
