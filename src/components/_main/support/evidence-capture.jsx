@@ -45,6 +45,19 @@ export default function EvidenceCapture({ minCount, maxCount = 6, onChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [captures]);
 
+  // Attach the stream once the <video> element actually exists in the DOM.
+  // It only mounts after cameraActive flips true (conditional render below),
+  // so attaching inline inside startCamera() runs too early — videoRef.current
+  // is still null at that point.
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {
+        setCameraError('Could not start the camera preview. Try turning the camera off and on again.');
+      });
+    }
+  }, [cameraActive]);
+
   const stopCamera = () => {
     streamRef.current?.getTracks()?.forEach((t) => t.stop());
     streamRef.current = null;
@@ -59,11 +72,7 @@ export default function EvidenceCapture({ minCount, maxCount = 6, onChange }) {
         audio: false
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setCameraActive(true);
+      setCameraActive(true); // triggers the effect above once <video> mounts
     } catch (err) {
       setCameraError(
         'Could not access your camera. Make sure you allow camera access, or use a device with a camera.'
@@ -137,7 +146,7 @@ export default function EvidenceCapture({ minCount, maxCount = 6, onChange }) {
         </Button>
       ) : (
         <Box sx={{ position: 'relative', mb: 1.5, borderRadius: 1, overflow: 'hidden', bgcolor: 'black' }}>
-          <video ref={videoRef} playsInline muted style={{ width: '100%', display: 'block', maxHeight: 320 }} />
+          <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', display: 'block', maxHeight: 320 }} />
           <Stack
             direction="row"
             spacing={1}
