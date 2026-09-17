@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 import { useDispatch } from 'react-redux';
 import { setLogout } from 'src/redux/slices/user';
 import { resetWishlist } from 'src/redux/slices/wishlist';
+
 // mui
 import { Typography, Divider, ListItemIcon, Button, MenuItem, Box } from '@mui/material';
 // icons
@@ -16,6 +17,7 @@ import { LuLayoutDashboard } from 'react-icons/lu';
 import { SlHome } from 'react-icons/sl';
 import { TbUserSquareRounded } from 'react-icons/tb';
 import { CiShop } from 'react-icons/ci';
+import { MdSupportAgent } from 'react-icons/md';
 
 // styles
 import RootStyled from './styled';
@@ -139,6 +141,18 @@ export default function UserList({ ...props }) {
             </ListItemIcon>
                 Qoute Request
           </MenuItem>
+
+           <MenuItem
+              onClick={() => {
+                setOpen(false);
+                router.push('/support');
+              }}
+            >
+              <ListItemIcon className="menu-icon">
+                <MdSupportAgent />
+              </ListItemIcon>
+              Support
+            </MenuItem>
         </>
       )}
 

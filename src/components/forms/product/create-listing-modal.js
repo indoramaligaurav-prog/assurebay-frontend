@@ -17,8 +17,10 @@ import * as api from 'src/services';
 
 const CONDITIONS = [
   { value: 'new', label: 'New' },
-  { value: 'used', label: 'Used' },
+  { value: 'refurbished', label: 'Refurbished' },
   { value: 'reconditioned', label: 'Reconditioned' },
+  { value: 'overhauled', label: 'Overhauled' },
+  { value: 'used', label: 'Used' },
   { value: 'as_is', label: 'As-Is' },
 ];
 

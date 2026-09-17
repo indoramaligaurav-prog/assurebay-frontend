@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 // mui
-import { Box, Card, Chip, Typography, TextField, Button, Stack, CircularProgress, IconButton, Divider } from '@mui/material';
+import { Box, Card, Chip, Typography, TextField, Button, Stack, CircularProgress, IconButton, Divider, Alert, MenuItem } from '@mui/material';
 // routing
 import { useRouter } from 'next/navigation';
 // icons
@@ -11,7 +11,12 @@ import { FiArrowLeft, FiSend } from 'react-icons/fi';
 import * as api from 'src/services';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 // constants
-import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_CHIP_COLOR, SUPPORT_CATEGORY_LABELS } from 'src/constants/support';
+import {
+  SUPPORT_STATUS_LABELS,
+  SUPPORT_STATUS_CHIP_COLOR,
+  SUPPORT_CATEGORY_LABELS,
+  ISSUE_DECISION_OPTIONS
+} from 'src/constants/support';
 
 SupportThread.propTypes = { ticketId: PropTypes.string };
 
@@ -67,6 +72,9 @@ export default function SupportThread({ ticketId }) {
       </Stack>
 
       <Card sx={{ p: 3 }}>
+        {ticket.vendor && ticket.category === 'order_issue' && (
+          <VendorDecisionPanel ticket={ticket} ticketId={ticketId} />
+        )}
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 2 }}>
           <Box>
             <Typography variant="h6" fontWeight={600}>
@@ -135,5 +143,71 @@ export default function SupportThread({ ticketId }) {
         </form>
       </Card>
     </Box>
+  );
+}
+
+function VendorDecisionPanel({ ticket, ticketId }) {
+  const queryClient = useQueryClient();
+  const [decision, setDecision] = useState('');
+  const [note, setNote] = useState('');
+
+  const { data: context } = useQuery({
+    queryKey: ['vendor-issue-context', ticketId],
+    queryFn: () => api.vendorGetIssueContext(ticketId),
+    enabled: ticket.currentHandler === 'vendor' && Boolean(ticket.relatedOrderItem)
+  });
+
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: () => api.vendorDecideTicket({ id: ticketId, decision, note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-support-ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-customer-issues'] });
+    }
+  });
+
+  const reasonInfo = context?.reasons?.find((r) => r.code === ticket.issueReason);
+
+  return (
+    <Card sx={{ p: 2.5, mb: 2, bgcolor: 'background.neutral' }}>
+      <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+        Issue reported
+      </Typography>
+      {context?.productCondition && (
+        <Chip size="small" label={`Condition: ${context.productCondition.name}`} sx={{ mb: 1 }} />
+      )}
+      {reasonInfo && (
+        <>
+          <Typography variant="body2" fontWeight={600}>{reasonInfo.label}</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            {reasonInfo.description}
+          </Typography>
+          {reasonInfo.policy && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              Returns: {reasonInfo.policy.returnsAccepted ? `Accepted within ${reasonInfo.policy.allowedWithinDays || '—'} days` : 'Not standard for this listing'}
+            </Typography>
+          )}
+        </>
+      )}
+
+      {ticket.currentHandler === 'vendor' ? (
+        <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+          {error && <Alert severity="error">{error?.response?.data?.message || 'Could not submit decision.'}</Alert>}
+          <TextField  select size="small" label="Your decision" value={decision} onChange={(e) => setDecision(e.target.value)}>
+            {ISSUE_DECISION_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            ))}
+          </TextField >
+          <TextField  size="small" label="Note to customer" value={note} onChange={(e) => setNote(e.target.value)} multiline rows={2} />
+          <Button variant="contained" disabled={!decision || isPending} onClick={() => mutate()}>
+            {isPending ? 'Submitting…' : 'Submit decision'}
+          </Button>
+        </Stack>
+      ) : (
+        <Alert severity="info" sx={{ mt: 1.5 }}>
+          {ticket.currentHandler === 'customer' && 'Waiting for the customer to respond to your decision.'}
+          {ticket.currentHandler === 'admin' && 'This ticket has been escalated to Assuredbay support.'}
+        </Alert>
+      )}
+    </Card>
   );
 }

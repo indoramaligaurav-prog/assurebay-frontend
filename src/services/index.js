@@ -1097,3 +1097,20 @@ export const createPickupLocation = async (pickupForm) => {
   const { data } = await http.post('/vendor/pickup-locations', pickupForm);
   return data;
 };
+
+
+
+export const vendorGetCustomerIssues = async (params) => {
+  const { data } = await http.get(`/vendor/support/tickets/customer-issues`, { params });
+  return data;
+};
+
+export const vendorGetIssueContext = async (id) => {
+  const { data } = await http.get(`/vendor/support/tickets/${id}/issue-context`);
+  return data;
+};
+
+export const vendorDecideTicket = async ({ id, decision, note }) => {
+  const { data } = await http.patch(`/vendor/support/tickets/${id}/decision`, { decision, note });
+  return data;
+};

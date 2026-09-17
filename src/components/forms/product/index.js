@@ -68,13 +68,14 @@ const [existingImages, setExistingImages] = useState(product?.images || []); // 
   const [openBrandModal, setOpenBrandModal] = useState(false);
 
    const user = useSelector((state) => state.user.user);
-  
+        console.log('currencySymbol =>', user);
   const country = user?.zone?.country || 'US';
 
-  console.log('vendor and COUNTRY and code  =>', country);
   
   const currencySymbol =
     currencyConfig[country]?.symbol || '$';
+
+
 
     const [openShippingInfo, setOpenShippingInfo] = useState(false);
     const [openPickupLocation, setOpenPickupLocation] = useState(false);
@@ -816,10 +817,12 @@ internationalReturns: values.internationalReturns,
     disabled={isRestricted}
   >
     {[
-      { value: 'new', label: 'New' },
-      { value: 'used', label: 'Used' },
-      { value: 'reconditioned', label: 'Reconditioned' },
-      { value: 'as_is', label: 'As-Is' },
+        { value: 'new', label: 'New' },
+        { value: 'refurbished', label: 'Refurbished' },
+        { value: 'reconditioned', label: 'Reconditioned' },
+        { value: 'overhauled', label: 'Overhauled' },
+        { value: 'used', label: 'Used' },
+        { value: 'as_is', label: 'As-Is' },
     ].map((c) => (
       <MenuItem key={c.value} value={c.value}>
         {c.label}
@@ -864,7 +867,7 @@ internationalReturns: values.internationalReturns,
                   <>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
-                        fullWidth type="number" label="MRP"
+                        fullWidth type="number" label="MRP (in registered country currency)"
                         name="mrp" value={values.mrp}
                         onChange={formik.handleChange} inputProps={{ min: 0 }}
                         InputProps={{

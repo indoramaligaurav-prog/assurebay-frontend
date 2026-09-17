@@ -24,6 +24,9 @@ export const SUPPORT_STATUS_TABS = [
   { value: 'open', label: 'Open' },
   { value: 'in_progress', label: 'In progress' },
   { value: 'awaiting_reply', label: 'Awaiting reply' },
+  { value: 'awaiting_vendor_response', label: 'Awaiting you' },
+  { value: 'awaiting_customer_decision', label: 'Awaiting customer' },
+  { value: 'escalated', label: 'Escalated' },
   { value: 'resolved', label: 'Resolved' },
   { value: 'closed', label: 'Closed' }
 ];
@@ -32,6 +35,9 @@ export const SUPPORT_STATUS_LABELS = {
   open: 'Open',
   in_progress: 'In progress',
   awaiting_reply: 'Awaiting reply',
+  awaiting_vendor_response: 'Awaiting your response',
+  awaiting_customer_decision: 'Awaiting customer',
+  escalated: 'Escalated to Assuredbay',
   resolved: 'Resolved',
   closed: 'Closed'
 };
@@ -40,9 +46,20 @@ export const SUPPORT_STATUS_CHIP_COLOR = {
   open: 'info',
   in_progress: 'warning',
   awaiting_reply: 'secondary',
+  awaiting_vendor_response: 'warning',
+  awaiting_customer_decision: 'secondary',
+  escalated: 'error',
   resolved: 'success',
   closed: 'default'
 };
+
+export const ISSUE_DECISION_OPTIONS = [
+  { value: 'return_refund', label: 'Approve return & refund' },
+  { value: 'refund_only', label: 'Approve refund only (no return)' },
+  { value: 'replacement', label: 'Approve replacement' },
+  { value: 'repair', label: 'Approve repair' },
+  { value: 'declined', label: 'Decline this claim' }
+];
 
 export const SUPPORT_RAISED_BY_ROLE_LABELS = {
   user: 'Customer',

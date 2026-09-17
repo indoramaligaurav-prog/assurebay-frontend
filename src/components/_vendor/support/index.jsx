@@ -36,12 +36,16 @@ import {
 
 export default function SupportInbox() {
   const router = useRouter();
+  const [view, setView] = useState('mine'); // 'mine' | 'customer'
   const [status, setStatus] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data, isPending: isLoading } = useQuery({
-    queryKey: ['vendor-support-tickets', status],
-    queryFn: () => api.vendorGetMySupportTickets(status ? { status } : {})
+    queryKey: view === 'mine' ? ['vendor-support-tickets', status] : ['vendor-customer-issues', status],
+    queryFn: () =>
+      view === 'mine'
+        ? api.vendorGetMySupportTickets(status ? { status } : {})
+        : api.vendorGetCustomerIssues(status ? { status } : {})
   });
 
   const tickets = data?.tickets || [];
@@ -54,13 +58,22 @@ export default function SupportInbox() {
             Support
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Raise a query with the marketplace team, or track an existing one.
+            {view === 'mine'
+              ? 'Raise a query with the marketplace team, or track an existing one.'
+              : 'Customer issues raised about your products, awaiting your response.'}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<FiPlus />} onClick={() => setDialogOpen(true)}>
-          Raise a query
-        </Button>
+        {view === 'mine' && (
+          <Button variant="contained" startIcon={<FiPlus />} onClick={() => setDialogOpen(true)}>
+            Raise a query
+          </Button>
+        )}
       </Stack>
+
+      <Tabs value={view} onChange={(e, val) => { setView(val); setStatus(''); }} sx={{ mb: 2 }}>
+        <Tab value="mine" label="My tickets" />
+        <Tab value="customer" label="Customer issues" />
+      </Tabs>
 
       <Card>
         <Tabs
@@ -96,7 +109,7 @@ export default function SupportInbox() {
             <TableHead>
               <TableRow>
                 <TableCell>Ticket</TableCell>
-                <TableCell>Category</TableCell>
+                <TableCell>{view === 'mine' ? 'Category' : 'Customer'}</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Last update</TableCell>
               </TableRow>
@@ -119,7 +132,7 @@ export default function SupportInbox() {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {SUPPORT_CATEGORY_LABELS[t.category] || t.category}
+                      {view === 'mine' ? (SUPPORT_CATEGORY_LABELS[t.category] || t.category) : (t.raisedBy?.name || '—')}
                     </Typography>
                   </TableCell>
                   <TableCell>

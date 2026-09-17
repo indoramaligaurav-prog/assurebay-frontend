@@ -30,6 +30,8 @@ import {BsChatSquareQuote} from 'react-icons/bs'
 import { HiOutlineShoppingBag } from 'react-icons/hi2';
 import { IoSettingsOutline } from 'react-icons/io5';
 
+import { BiSupport } from 'react-icons/bi';
+
 // components
 
 import Scrollbar from 'src/components/scrollbar';
@@ -66,14 +68,21 @@ export const navlinks = [
     isSearch: true
   },
   {
-    id: 4,
+    id: 5,
+    title: 'Support',
+    slug: 'support',
+    icon: <BiSupport />,
+    isSearch: false
+  },
+  {
+    id: 6,
     title: 'Shop',
     slug: 'shop',
     icon: <HiOutlineShoppingBag />,
     isSearch: false
   },
   {
-    id: 5,
+    id: 7,
     title: 'Settings',
     slug: 'settings',
     icon: <IoSettingsOutline />,
