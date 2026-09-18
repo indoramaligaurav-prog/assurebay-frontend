@@ -188,16 +188,18 @@ const posts = [
 <Box sx={{ borderTop: 1, borderColor: "#ccc", margin:"0 30px" }} />
 
       <ProductList sx={{
-        background:"#fff !important"
+        background:"#fcfbf7 !important"
       }}
         title="Recently Viewed Products"
         path="?featured=true"
         data={featuredProducts?.data || []}
       />
-  <CategoryShowcase categories={categories?.data || []} />
+        <CategoryShowcase categories={categories?.data || []} />
+
+        
     
       <ProductList sx={{
-        background:"#fff !important"
+        background:"#fcfbf7 !important"
       }}
         title="Featured Products"
         description="Discover a curated selection of our most loved products — handpicked for quality, popularity, and style."

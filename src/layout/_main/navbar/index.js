@@ -61,7 +61,7 @@ export default function Navbar({ branding, categories = [] }) {
     <>
       <Box>
         {/* 🔵 TOP BAR */}
-        <Box sx={{ color: 'black', py: '6px', px: '10px', textAlign: 'center', fontSize: '13px' }}>
+        <Box sx={{ color: 'black', py: '6px', px: '10px', textAlign: 'center', fontSize: '13px' , bgcolor: '#fcfbf7',  }}>
           <Stack direction="row" justifyContent="center" alignItems="center" spacing={2} flexWrap="wrap">
             <Typography sx={{ fontSize: '13px' }}>
               FREE delivery & 40% Discount for next 3 orders! Place your 1st order in.
@@ -69,7 +69,7 @@ export default function Navbar({ branding, categories = [] }) {
             <Button
               variant="contained"
               sx={{
-                fontSize: '12px !important', backgroundColor: '#000', color: '#fff',
+                fontSize: '12px !important', backgroundColor: '#eb4a3a', color: '#fff',
                 textTransform: 'none', borderRadius: '6px', px: '10px', py: '2px',
                 height: '28px !important', '&:hover': { backgroundColor: '#333' },
               }}
@@ -82,7 +82,7 @@ export default function Navbar({ branding, categories = [] }) {
         {/* ⚪ SECONDARY BAR */}
         <Box
           sx={{
-            backgroundColor: '#fff', px: '20px', py: '8px',
+            backgroundColor: '#fcfbf7', px: '20px', py: '8px',
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'center', flexWrap: 'wrap',
           }}
@@ -128,7 +128,7 @@ export default function Navbar({ branding, categories = [] }) {
                 borderRadius: '6px',
                 border: '1px solid #e5e7eb',
                 transition: 'all .15s',
-                '&:hover': { borderColor: '#c7d96a', color: '#6b7534', backgroundColor: '#f7fae5' },
+                '&:hover': { borderColor: '#e5e7eb', color: '#000', backgroundColor: '#f7fae5' },
               }}
             >
           
@@ -140,7 +140,7 @@ export default function Navbar({ branding, categories = [] }) {
                   sx={{
                     width: 16, height: 16, borderRadius: '50%',
                     border: '2px solid #e5e7eb',
-                    borderTopColor: '#c7d96a',
+                    borderTopColor: '#eb4a3a',
                     animation: 'spin .7s linear infinite',
                     '@keyframes spin': { to: { transform: 'rotate(360deg)' } },
                     display: 'inline-block',
@@ -164,7 +164,7 @@ export default function Navbar({ branding, categories = [] }) {
       {/* 🟢 MAIN NAVBAR */}
       <AppBar
         position="sticky"
-        sx={{ boxShadow: 'none', bgcolor: '#fff', fontSize: '14px', borderTop: '1px solid #eee' }}
+        sx={{ boxShadow: 'none', bgcolor: '#fcfbf7', fontSize: '14px', borderTop: '1px solid #eee' }}
       >
         <Container maxWidth="xl">
           <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', py: 1.5 }}>
@@ -217,8 +217,8 @@ export default function Navbar({ branding, categories = [] }) {
                       onClick={handleSearch}
                       sx={{
                         minWidth: 40, height: 40, borderRadius: '50%',
-                        backgroundColor: '#c7d96a', color: '#000',
-                        '&:hover': { backgroundColor: '#b5c85a' },
+                        backgroundColor: '#eb4a3a', color: '#fcfbf7',
+                        '&:hover': { backgroundColor: '#eb4a3a' },
                       }}
                     >
                       <FaSearch size={16} />

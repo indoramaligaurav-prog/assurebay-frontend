@@ -10,17 +10,17 @@ import ActionBar from 'src/layout/_main/actionbar';
 
 // Meta information
 export const metadata = {
-  title: 'Assuredbay E-commerce Script | Your Gateway to Seamless Shopping and Secure Transactions',
+  title: 'Wreeo E-commerce Script | Your Gateway to Seamless Shopping and Secure Transactions',
   description:
-    'Log in to Assuredbay for secure access to your account. Enjoy seamless shopping, personalized experiences, and hassle-free transactions. Your trusted portal to a world of convenience awaits. Login now!',
-  applicationName: 'Assuredbay',
-  authors: 'Assuredbay',
-  keywords: 'ecommerce, Assuredbay, Commerce, Sign in Assuredbay, Signin From Assuredbay',
+    'Log in to Wreeo for secure access to your account. Enjoy seamless shopping, personalized experiences, and hassle-free transactions. Your trusted portal to a world of convenience awaits. Login now!',
+  applicationName: 'Wreeo',
+  authors: 'Wreeo',
+  keywords: 'ecommerce, Wreeo, Commerce, Sign in Wreeo, Signin From Wreeo',
   icons: {
-    icon: `${process.env.NEXT_PUBLIC_API_URL}/uploads/branding/favicon.jpeg`
+    icon: `${process.env.NEXT_PUBLIC_API_URL}/uploads/branding/favicon.svg`
   },
   openGraph: {
-    images: 'https://Assuredbay.vercel.app/opengraph-image.png?1c6a1fa20db2840f'
+    images: 'https://Wreeo.vercel.app/opengraph-image.png?1c6a1fa20db2840f'
   }
 };
 const baseUrl = process.env.NEXT_PUBLIC_API_URL;

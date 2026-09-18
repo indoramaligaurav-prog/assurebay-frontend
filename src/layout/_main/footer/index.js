@@ -92,7 +92,7 @@ export default function Footer({ branding }) {
   return (
     <Box
       sx={{
-        background: "#f7f7f7",
+        background: "#fff",
         py: 2,
         px: 1,
         mt: 1,

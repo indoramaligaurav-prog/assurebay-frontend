@@ -46,7 +46,7 @@ const open = Boolean(anchorEl);
   };
 
   return (
-    <Box sx={{ bgcolor: '#fff', borderBottom: '1px solid #e5e7eb' }}>
+    <Box sx={{ bgcolor: '#fcfbf7', borderBottom: '1px solid #fcfbf7' }}>
       <Container maxWidth="xl">
           <Stack direction="row" justifyContent={'center'}  sx={{ display: { xs: 'flex', md: 'none' } }}>
                          <Logo branding={branding} />

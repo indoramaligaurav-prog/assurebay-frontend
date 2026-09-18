@@ -11,17 +11,17 @@ import ActionBar from 'src/layout/_main/actionbar';
 
 // Meta information
 export const metadata = {
-  title: 'assuredbay E-commerce Script | Your Gateway to Seamless Shopping and Secure Transactions',
+  title: 'Wreeo E-commerce Script | Your Gateway to Seamless Shopping and Secure Transactions',
   description:
-    'Log in to assuredbay for secure access to your account. Enjoy seamless shopping, personalized experiences, and hassle-free transactions. Your trusted portal to a world of convenience awaits. Login now!',
-  applicationName: 'assuredbay',
-  authors: 'assuredbay',
-  keywords: 'ecommerce, assuredbay, Commerce, Sign in assuredbay, Signin From assuredbay',
+    'Log in to Wreeo for secure access to your account. Enjoy seamless shopping, personalized experiences, and hassle-free transactions. Your trusted portal to a world of convenience awaits. Login now!',
+  applicationName: 'Wreeo',
+  authors: 'Wreeo',
+  keywords: 'ecommerce, Wreeo, Commerce, Sign in Wreeo, Signin From Wreeo',
   icons: {
     icon: '/favicon.png'
   },
   openGraph: {
-    images: 'https://assuredbay.vercel.app/opengraph-image.png?1c6a1fa20db2840f'
+    images: 'https://Wreeo.vercel.app/opengraph-image.png?1c6a1fa20db2840f'
   }
 };
 

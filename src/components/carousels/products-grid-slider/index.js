@@ -48,7 +48,7 @@ function ProductsCarousel({ data, isLoading, query }) {
           px: 1,
           pb: 1,
           boxSizing: 'border-box',
-          bgcolor: '#fff'
+          bgcolor: 'fcfbf7'
         }}
       >
         <ProductCard loading={isLoading} product={!isLoading ? item : null} />
@@ -56,7 +56,7 @@ function ProductsCarousel({ data, isLoading, query }) {
     ));
 
   return (
-    <Paper elevation={0} sx={{ position: 'relative', width: '100%', overflow: 'hidden', background: "#fff" }}>
+    <Paper elevation={0} sx={{ position: 'relative', width: '100%', overflow: 'hidden', background: "#fcfbf7" }}>
       <Box
         ref={emblaRef}
         sx={{

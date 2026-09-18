@@ -25,7 +25,7 @@ export default function NestedList({ data, isLoading, onClose }) {
 
   return (
     <Box>
-      <List sx={{ width: '100%', bgcolor: 'background.paper', px: '10px' }} component="nav">
+      <List sx={{ width: '100%', bgcolor: '#fcfbf7', px: '10px' }} component="nav">
         {(isLoading ? [] : data)?.map((parentCategory, i) => {
           const parentKey = `parent-${i}`;
           return (
