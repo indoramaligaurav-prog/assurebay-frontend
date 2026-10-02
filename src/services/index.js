@@ -1114,3 +1114,8 @@ export const vendorDecideTicket = async ({ id, decision, note }) => {
   const { data } = await http.patch(`/vendor/support/tickets/${id}/decision`, { decision, note });
   return data;
 };
+
+export const userRespondToVendorDecision = async ({ id, accepted, note }) => {
+  const { data } = await http.patch(`/support/tickets/${id}/respond`, { accepted, note });
+  return data;
+};

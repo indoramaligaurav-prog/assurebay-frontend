@@ -10,6 +10,8 @@ import { FiArrowLeft, FiSend } from 'react-icons/fi';
 // api
 import * as api from 'src/services';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { Alert, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 // constants
 import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_CHIP_COLOR, SUPPORT_CATEGORY_LABELS } from 'src/constants/support';
 
@@ -167,5 +169,67 @@ export default function SupportThread({ ticketId }) {
         </form>
       </Card>
     </Box>
+  );
+}
+
+function VendorDecisionResponse({ ticket, ticketId }) {
+  const queryClient = useQueryClient();
+  const [note, setNote] = useState('');
+
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: (accepted) => api.userRespondToVendorDecision({ id: ticketId, accepted, note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-support-ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['user-support-tickets'] });
+    }
+  });
+
+  const DECISION_LABELS = {
+    return_refund: 'a return & refund',
+    refund_only: 'a refund (no return required)',
+    replacement: 'a replacement',
+    repair: 'a repair',
+    declined: 'to decline your claim'
+  };
+
+  return (
+    <Card sx={{ p: 2.5, mb: 2, bgcolor: 'background.neutral' }}>
+      <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+        Vendor's response
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        The vendor decided to offer {DECISION_LABELS[ticket.vendorDecision?.decision] || 'a decision'}.
+      </Typography>
+      {ticket.vendorDecision?.note && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontStyle: 'italic' }}>
+          "{ticket.vendorDecision.note}"
+        </Typography>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 1.5 }}>
+          {error?.response?.data?.message || 'Could not submit your response.'}
+        </Alert>
+      )}
+
+      <Stack spacing={1.5}>
+        <TextField
+          size="small"
+          label="Add a note (optional)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          multiline
+          rows={2}
+        />
+        <Stack direction="row" spacing={1.5}>
+          <Button variant="contained" color="success" disabled={isPending} onClick={() => mutate(true)}>
+            Accept & close
+          </Button>
+          <Button variant="outlined" color="error" disabled={isPending} onClick={() => mutate(false)}>
+            Not satisfied — escalate to Assuredbay
+          </Button>
+        </Stack>
+      </Stack>
+    </Card>
   );
 }
