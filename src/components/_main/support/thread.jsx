@@ -15,6 +15,8 @@ import { Alert, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 // constants
 import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_CHIP_COLOR, SUPPORT_CATEGORY_LABELS } from 'src/constants/support';
 
+import TicketProductHeader from '@/components/support/ticket-product-header';
+
 SupportThread.propTypes = { ticketId: PropTypes.string };
 
 export default function SupportThread({ ticketId }) {
@@ -68,6 +70,15 @@ export default function SupportThread({ ticketId }) {
       </Stack>
 
       <Card sx={{ p: 3 }}>
+        <TicketProductHeader product={ticket.context?.product} orderNo={ticket.context?.orderNo} />
+        {ticket.category === 'order_issue' && ticket.vendorDecision?.decision && ticket.currentHandler === 'customer' && (
+            <VendorDecisionResponse ticket={ticket} ticketId={ticketId} />
+          )}
+          {ticket.category === 'order_issue' && ticket.vendorDecision?.decision && ticket.currentHandler === 'admin' && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Your appeal has been sent to Wreeo customer support. They will reply here.
+            </Alert>
+          )}
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 2 }}>
           <Box>
             <Typography variant="h6" fontWeight={600}>
@@ -174,10 +185,10 @@ export default function SupportThread({ ticketId }) {
 
 function VendorDecisionResponse({ ticket, ticketId }) {
   const queryClient = useQueryClient();
-  const [note, setNote] = useState('');
+  const [dismissed, setDismissed] = useState(false);
 
-  const { mutate, isPending, error } = useMutation({
-    mutationFn: (accepted) => api.userRespondToVendorDecision({ id: ticketId, accepted, note }),
+  const { mutate: appeal, isPending, error } = useMutation({
+    mutationFn: () => api.userRespondToVendorDecision({ id: ticketId, accepted: false }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-support-ticket', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['user-support-tickets'] });
@@ -192,43 +203,36 @@ function VendorDecisionResponse({ ticket, ticketId }) {
     declined: 'to decline your claim'
   };
 
+  if (dismissed) return null;
+
   return (
     <Card sx={{ p: 2.5, mb: 2, bgcolor: 'background.neutral' }}>
       <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
-        Vendor's response
+        Seller's response
       </Typography>
       <Typography variant="body2" sx={{ mb: 1 }}>
-        The vendor decided to offer {DECISION_LABELS[ticket.vendorDecision?.decision] || 'a decision'}.
+        The seller decided to offer {DECISION_LABELS[ticket.vendorDecision?.decision] || 'a decision'}.
       </Typography>
       {ticket.vendorDecision?.note && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontStyle: 'italic' }}>
           "{ticket.vendorDecision.note}"
         </Typography>
       )}
-
+      <Typography variant="body2" fontWeight={600} sx={{ mb: 1.5 }}>
+        Not satisfied with the seller's decision? Want to appeal to Wreeo customer support?
+      </Typography>
       {error && (
         <Alert severity="error" sx={{ mb: 1.5 }}>
-          {error?.response?.data?.message || 'Could not submit your response.'}
+          {error?.response?.data?.message || 'Could not submit your appeal.'}
         </Alert>
       )}
-
-      <Stack spacing={1.5}>
-        <TextField
-          size="small"
-          label="Add a note (optional)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          multiline
-          rows={2}
-        />
-        <Stack direction="row" spacing={1.5}>
-          <Button variant="contained" color="success" disabled={isPending} onClick={() => mutate(true)}>
-            Accept & close
-          </Button>
-          <Button variant="outlined" color="error" disabled={isPending} onClick={() => mutate(false)}>
-            Not satisfied — escalate to Assuredbay
-          </Button>
-        </Stack>
+      <Stack direction="row" spacing={1.5}>
+        <Button variant="contained" disabled={isPending} onClick={() => appeal()}>
+          Yes, appeal
+        </Button>
+        <Button variant="outlined" color="inherit" disabled={isPending} onClick={() => setDismissed(true)}>
+          Dismiss
+        </Button>
       </Stack>
     </Card>
   );

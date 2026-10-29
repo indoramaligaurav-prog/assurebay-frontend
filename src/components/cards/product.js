@@ -88,7 +88,7 @@ useEffect(() => {
     }}
   >
     {isWishlisted ? (
-      <FavoriteIcon sx={{ color: '#c7d96a' }} />
+      <FavoriteIcon sx={{ color: '#ee6051' }} />
     ) : (
       <FavoriteBorderIcon />
     )}

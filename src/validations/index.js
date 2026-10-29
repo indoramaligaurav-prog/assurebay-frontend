@@ -376,6 +376,13 @@ phone: Yup.string()
   password: Yup.string().required('Password is required').min(8, 'Password should be 8 characters or longer.')
 });
 
+const businessSignUpSchema = Yup.object().shape({
+  companyName: Yup.string().trim().required('Business name is required'),
+  businessCountry: Yup.string().required('Country is required'),
+  email: Yup.string().email('Enter a valid email').required('Business email is required'),
+  password: Yup.string().min(8, 'Password must be at least 8 characters').required('Password is required')
+});
+
 const checkoutSchema = (checked) =>
   Yup.object().shape({
     firstName: Yup.string().required('First name is required'),
@@ -437,5 +444,6 @@ export {
   signInSchema,
   signUpSchema,
   checkoutSchema,
-  editPaymentSchema
+  editPaymentSchema,
+  businessSignUpSchema
 };

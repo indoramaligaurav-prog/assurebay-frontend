@@ -36,13 +36,14 @@ export default function AssignLocationPage() {
   });
 
   // 🔥 FIX: SET USER ID after redux loads
-  useEffect(() => {
-    if (user && user._id) {
-    console.log("USER LOADED:", user._id);
+useEffect(() => {
+  if (user && user._id) {
+    const match = countries.find((c) => c.label === user.businessCountry);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      user_id: user._id
+      user_id: user._id,
+      country: prev.country || match?.code || ''
     }));
   }
 }, [user]);

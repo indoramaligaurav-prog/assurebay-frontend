@@ -74,7 +74,7 @@ export default function CurrencyDialog({
       <DialogContent sx={{ px: 3, py: 2.5 }}>
         <Box>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.2 }}>
-            <MdAttachMoney size={16} color="#c7d96a" />
+            <MdAttachMoney size={16} color="#ee6051" />
             <Typography sx={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>
               Currency
             </Typography>
@@ -101,8 +101,8 @@ export default function CurrencyDialog({
                         borderRadius: '10px',
                         fontSize: '13px',
                         '& fieldset': { borderColor: '#e5e7eb' },
-                        '&:hover fieldset': { borderColor: '#c7d96a' },
-                        '&.Mui-focused fieldset': { borderColor: '#c7d96a', borderWidth: '1.5px' },
+                        '&:hover fieldset': { borderColor: '#ee6051' },
+                        '&.Mui-focused fieldset': { borderColor: '#ee6051', borderWidth: '1.5px' },
                       },
                     }}
                   />
@@ -130,7 +130,7 @@ export default function CurrencyDialog({
             borderRadius: '10px', textTransform: 'none',
             borderColor: '#e5e7eb', color: '#374151',
             fontWeight: 500, fontSize: '13px',
-            '&:hover': { borderColor: '#c7d96a', backgroundColor: 'transparent' },
+            '&:hover': { borderColor: '#ee6051', backgroundColor: 'transparent' },
           }}
         >
           Cancel
@@ -141,9 +141,9 @@ export default function CurrencyDialog({
           onClick={handleSave}
           sx={{
             borderRadius: '10px', textTransform: 'none',
-            backgroundColor: '#c7d96a', color: '#1a2000',
+            backgroundColor: '#ee6051', color: '#fff',
             fontWeight: 600, fontSize: '13px', boxShadow: 'none',
-            '&:hover': { backgroundColor: '#b5c85a', boxShadow: 'none' },
+            '&:hover': { backgroundColor: '#ee6051', boxShadow: 'none' },
           }}
         >
           Save preference

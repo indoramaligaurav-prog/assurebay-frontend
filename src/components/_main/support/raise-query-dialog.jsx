@@ -44,7 +44,8 @@ export default function RaiseQueryDialog({
   contextLabel,
   relatedOrder,
   relatedOrderItem,
-  relatedProduct
+  relatedProduct,
+  itemStatus
 }) {
   const isOrderIssue = Boolean(relatedOrderItem);
 
@@ -59,6 +60,7 @@ export default function RaiseQueryDialog({
           relatedOrder={relatedOrder}
           relatedOrderItem={relatedOrderItem}
           relatedProduct={relatedProduct}
+          itemStatus={itemStatus}
         />
       ) : (
         <GeneralQueryForm open={open} onClose={onClose} onCreated={onCreated} />
@@ -70,7 +72,7 @@ export default function RaiseQueryDialog({
 // ────────────────────────────────────────────────────────────────
 // Order-issue flow: reason (dynamic) -> evidence (if required) -> details
 // ────────────────────────────────────────────────────────────────
-function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, relatedOrderItem, relatedProduct }) {
+function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, relatedOrderItem, relatedProduct , itemStatus }) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState('reason'); // 'reason' | 'evidence' | 'details'
   const [issueReason, setIssueReason] = useState(null);
@@ -95,6 +97,11 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
       setEvidenceFiles([]);
     }
   }, [open]);
+
+  const delivered = itemStatus === 'delivered';
+const reasons = (data?.reasons || []).filter((r) =>
+  !itemStatus ? true : delivered ? r.code !== 'not_received' : r.code === 'not_received'
+);
 
   const { mutate, isPending: submitting, error } = useMutation({
     mutationFn: (formData) => api.userRaiseSupportTicket(formData),
@@ -149,7 +156,9 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
             <CircularProgress size={26} />
           </Box>
         ) : step === 'reason' ? (
+          
           <Stack spacing={1.5}>
+           
             {!data?.withinAdvisoryWindow && (
               <Alert severity="warning" variant="outlined">
                 It's been {data?.daysSinceOrder} days since this order — reports are normally reviewed within{' '}
@@ -157,7 +166,7 @@ function OrderIssueForm({ open, onClose, onCreated, contextLabel, relatedOrder, 
               </Alert>
             )}
 
-            {data?.reasons?.map((reason) => (
+            {reasons.map((reason) => (
               <Card key={reason.code} variant="outlined">
                 <CardActionArea onClick={() => selectReason(reason)} sx={{ p: 1.5 }}>
                   <Typography variant="subtitle2" fontWeight={600}>

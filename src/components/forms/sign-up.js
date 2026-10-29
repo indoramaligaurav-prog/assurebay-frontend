@@ -26,7 +26,9 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Box,
-  MenuItem
+  MenuItem,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 
 import countries from 'src/data/countries.json';
@@ -43,7 +45,7 @@ import { IoPerson } from 'react-icons/io5';
 // hooks
 import { setCookie } from '@/hooks/use-cookies';
 import PhoneInputField from '../phone-input-field';
-import { signUpSchema } from '@/validations';
+import { signUpSchema, businessSignUpSchema } from '@/validations';
 export default function SignUpForm() {
   const router = useRouter();
   const searchParam = useSearchParams();
@@ -77,20 +79,29 @@ useEffect(() => {
 }, []);
 
   const formik = useFormik({
-    initialValues: {
-  firstName: '',
-  lastName: '',
-  companyName: '',
-  businessCountry: '',
-  phone: '',
-  email: '',
-  password: ''
-},
-    validationSchema: signUpSchema,
-    onSubmit: async (values) => {
-      setloading(true);
-      await mutate({ ...values });
-    }
+            initialValues: { firstName: '', lastName: '', companyName: '', businessCountry: '', phone: '', email: '', password: '', buyingOnly: false },
+            validationSchema: accountType === 'business' ? businessSignUpSchema : signUpSchema,
+            onSubmit: async (values) => {
+              setloading(true);
+              const payload =
+                accountType === 'business'
+                  ? {
+                      accountType: 'business',
+                      companyName: values.companyName,
+                      businessCountry: values.businessCountry,
+                      email: values.email,
+                      password: values.password,
+                      buyingOnly: values.buyingOnly
+                    }
+                  : {
+                      accountType: 'personal',
+                      firstName: values.firstName,
+                      lastName: values.lastName,
+                      email: values.email,
+                      password: values.password
+                    };
+              mutate(payload);
+            }
   });
 
   const googleLogin = useGoogleLogin({
@@ -129,11 +140,11 @@ useEffect(() => {
 
   const { mutate } = useMutation({
     mutationFn: api.signUp,
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       dispatch(signIn(data.user));
       await setCookie('token', data.token);
       toast.success(`OTP sent to your email ${data.user.firstName}`);
-      const otpRedirect = accountType === 'business' ? '/create-shop' : redirect || '/';
+       const otpRedirect = variables.accountType === 'business' && !variables.buyingOnly ? '/create-shop' : redirect || '/';
       router.push(`/auth/verify-otp?redirect=${otpRedirect}`);
     },
     onError: (err) => {
@@ -190,8 +201,12 @@ useEffect(() => {
   <ToggleButtonGroup
     value={accountType}
     exclusive
-    onChange={(e, value) => {
-      if (value) setAccountType(value);
+   onChange={(e, value) => {
+      if (value) {
+        setAccountType(value);
+        formik.setTouched({}, false);
+        formik.setErrors({});
+      }
     }}
     fullWidth
     sx={{
@@ -230,27 +245,59 @@ useEffect(() => {
          <Stack spacing={2}>
 
 
-  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-    <TextField
-      fullWidth
-      placeholder="First name"
-      {...getFieldProps('firstName')}
-      error={Boolean(touched.firstName && errors.firstName)}
-      helperText={touched.firstName && errors.firstName}
-      sx={inputStyle}
-    />
+              {accountType === 'personal' ? (
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  fullWidth
+                  placeholder="First name"
+                  {...getFieldProps('firstName')}
+                  error={Boolean(touched.firstName && errors.firstName)}
+                  helperText={touched.firstName && errors.firstName}
+                  sx={inputStyle}
+                />
 
-    <TextField
-      fullWidth
-      placeholder="Last name"
-      {...getFieldProps('lastName')}
-      error={Boolean(touched.lastName && errors.lastName)}
-      helperText={touched.lastName && errors.lastName}
-      sx={inputStyle}
-    />
-  </Stack>
+                <TextField
+                  fullWidth
+                  placeholder="Last name"
+                  {...getFieldProps('lastName')}
+                  error={Boolean(touched.lastName && errors.lastName)}
+                  helperText={touched.lastName && errors.lastName}
+                  sx={inputStyle}
+                />
+              </Stack>
 
-</Stack>
+              ) : (
+              <Stack spacing={2}>
+                <TextField
+                  fullWidth
+                  placeholder="Business name"
+                  {...getFieldProps('companyName')}
+                  error={Boolean(touched.companyName && errors.companyName)}
+                  helperText={touched.companyName && errors.companyName}
+                  sx={inputStyle}
+                />
+                <TextField
+                  select
+                  fullWidth
+                  {...getFieldProps('businessCountry')}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (v) => v || <span style={{ color: '#757575' }}>Country where business is registered</span>
+                  }}
+                  error={Boolean(touched.businessCountry && errors.businessCountry)}
+                  helperText={touched.businessCountry && errors.businessCountry}
+                  sx={inputStyle}
+                >
+                  {countries.map((c) => (
+                    <MenuItem key={c.code} value={c.label}>
+                      {c.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Stack>
+            )}
+
+            </Stack>
 
           {/* <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           
@@ -267,7 +314,7 @@ useEffect(() => {
           </Stack> */}
           <Stack gap={0.5} width={1}>
             <Typography variant="overline" color="text.primary" htmlFor="email" component={'label'}>
-              Email
+              {accountType === 'business' ? 'Business email' : 'Email'}
             </Typography>
             <TextField
               id="email"
@@ -314,7 +361,19 @@ useEffect(() => {
               helperText={touched.password && errors.password}
             />
           </Stack>
-     
+
+          {accountType === 'business' && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={values.buyingOnly}
+                  onChange={(e) => setFieldValue('buyingOnly', e.target.checked)}
+                />
+              }
+              label="I'm only interested in buying on Assuredbay for now"
+            />
+          )}
+              
           <Button fullWidth size="large" type="submit" variant="contained" loading={loading}>
             Sign up
           </Button>

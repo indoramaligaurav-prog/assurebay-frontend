@@ -11,7 +11,7 @@ import Testimonials from 'src/components/_main/home/testimonials';
 import ProductList from '@/components/_main/home/products';
 import SubscriptionModal from 'src/components/_main/home/subscription';
 import { formatPrice } from '@/utils/formatPrice';
-
+import HeroSearch from '@/components/_main/home/hero-search';
 
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import DiscountIcon from "@mui/icons-material/Discount";
@@ -19,6 +19,9 @@ import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import { BorderTop } from '@mui/icons-material';
 import CategoryShowcase from '@/components/_main/home/category-showcase';
+
+import GoodPlace from '@/components/_main/home/good-place';
+import Marketplace from '@/components/_main/home/marketplace';
 
 // API services (direct fetch here or via service layer)
 const baseUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -52,6 +55,9 @@ export default async function IndexPage({catforhero }) {
       reviewsRes.json(),
       allCategoriesRes.json()
     ]);
+
+    const productsRes = await fetch(`${baseUrl}/api/products?limit=12`, { next: { revalidate: 60 } });
+const products = await productsRes.json();
 
 const features = [
   {
@@ -142,10 +148,15 @@ const posts = [
 
 
   return (
-    <Stack gap={3}>
-      <Stack gap={2} bgcolor={'white'}>
-        <Hero data={shops?.data || []} banners={banners?.data || []} allcategories={allCategories?.data || []} />
-      </Stack>
+    <Stack >
+      <HeroSearch categories={allCategories?.data || []} />
+        <Box
+       sx={{
+         background: '#fff',
+         pb: 4,
+         textAlign: 'center',
+       }} ><GoodPlace  /> </Box>
+<Marketplace categories={allCategories?.data || []} products={products?.data || []} />
 
 
  {/* <Box sx={{ py: 2, }}>
@@ -185,8 +196,6 @@ const posts = [
     ))}
   </Stack>
 </Box> */}
-<Box sx={{ borderTop: 1, borderColor: "#ccc", margin:"0 30px" }} />
-
       <ProductList sx={{
         background:"#fcfbf7 !important"
       }}
@@ -194,7 +203,7 @@ const posts = [
         path="?featured=true"
         data={featuredProducts?.data || []}
       />
-        <CategoryShowcase categories={categories?.data || []} />
+  
 
         
     

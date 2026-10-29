@@ -16,14 +16,14 @@ import {
   MenuItem,
   FormControlLabel,
   Checkbox,
-  Alert
+  Alert, Tooltip
 } from '@mui/material';
 // routing
 import { useRouter } from 'next/navigation';
 // redux
 import { useSelector } from 'react-redux';
 // icons
-import { FiArrowLeft, FiSend } from 'react-icons/fi';
+
 // api
 import * as api from 'src/services';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -33,9 +33,15 @@ import {
   SUPPORT_STATUS_LABELS,
   SUPPORT_STATUS_CHIP_COLOR,
   SUPPORT_CATEGORY_LABELS,
-  SUPPORT_RAISED_BY_ROLE_LABELS
+  SUPPORT_RAISED_BY_ROLE_LABELS,
+    DECISIONS_BY_CONDITION
 } from 'src/constants/support';
 import { ISSUE_REASON_LABELS, DECISION_OPTIONS, DECISION_LABELS } from 'src/constants/issue-taxonomy';
+
+import TicketProductHeader from '@/components/support/ticket-product-header';
+
+import { FiArrowLeft, FiSend, FiPhoneCall } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 
 SupportThreadAdmin.propTypes = { ticketId: PropTypes.string };
 
@@ -63,6 +69,12 @@ export default function SupportThreadAdmin({ ticketId }) {
     queryFn: () => api.adminGetTicketEligibility(ticketId),
     enabled: Boolean(ticket?.relatedOrderItem)
   });
+
+  const { data: callData } = useQuery({
+  queryKey: ['admin-call-request', ticketId],
+  queryFn: () => api.adminGetCallRequest(ticketId),
+  enabled: Boolean(ticketId)
+});
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-support-ticket', ticketId] });
@@ -109,15 +121,25 @@ export default function SupportThreadAdmin({ ticketId }) {
 
   const closed = ticket.status === 'closed';
   const assignedToMe = ticket.assignedTo === user?._id;
-  const canDecide = ticket.category === 'order_issue' && !ticket.resolution?.decision && !closed;
+  const sellerPhase =
+  ticket.category === 'order_issue' && ticket.currentHandler && ticket.currentHandler !== 'admin';
+const replyLocked = closed || sellerPhase;
+const canDecide = ticket.category === 'order_issue' && !ticket.resolution?.decision && !closed && !sellerPhase;
 
   const handleSend = (e) => {
     e.preventDefault();
-    if (!reply.trim() || closed) return;
+    if (!reply.trim() || replyLocked) return;
     sendReply({ message: reply, isInternalNote });
   };
 
   const reasonPolicy = eligibility?.reasons?.find((r) => r.code === ticket.issueReason)?.policy;
+
+  const conditionName = eligibility?.productCondition?.name || '';
+const conditionKey = conditionName.trim().toUpperCase().replace(/[\s-]+/g, '_');
+const allowed = DECISIONS_BY_CONDITION[conditionKey];
+const decisionOptions = allowed
+  ? DECISION_OPTIONS.filter((opt) => allowed.includes(opt.value))
+  : DECISION_OPTIONS;
 
   return (
     <Box sx={{ maxWidth: 760, mx: 'auto' }}>
@@ -131,6 +153,7 @@ export default function SupportThreadAdmin({ ticketId }) {
       </Stack>
 
       <Card sx={{ p: 3 }}>
+        <TicketProductHeader product={ticket.context?.product} orderNo={ticket.context?.orderNo} />
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
           <Box>
             <Typography variant="h6" fontWeight={600}>
@@ -185,6 +208,43 @@ export default function SupportThreadAdmin({ ticketId }) {
             </Button>
           )}
         </Stack>
+
+        {sellerPhase && (
+  <Alert severity="info" sx={{ mb: 2 }}>
+    This ticket is still with the seller. You can reply or decide once the customer appeals to Wreeo support.
+  </Alert>
+)}
+
+{callData?.callRequest && (
+  <Box sx={{ mb: 2, p: 2, border: '1px solid', borderColor: 'warning.main', borderRadius: 1.5 }}>
+    <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+      Call requested by vendor
+    </Typography>
+    <Typography variant="body2">
+      <strong>Slot:</strong> {new Date(callData.callRequest.slotStart).toLocaleString()} –{' '}
+      {new Date(callData.callRequest.slotEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    </Typography>
+    <Stack direction="row" alignItems="center" spacing={0.5}>
+  <Typography variant="body2">
+    <strong>Vendor:</strong> {callData.callRequest.snapshot?.vendorName}
+  </Typography>
+  <Tooltip title="Call vendor (via IVR)">
+    <IconButton size="small" color="primary" onClick={() => toast('IVR calling will be connected soon')}>
+      <FiPhoneCall />
+    </IconButton>
+  </Tooltip>
+</Stack>
+    <Typography variant="body2">
+      <strong>Order:</strong> #{callData.callRequest.snapshot?.orderNo} · {callData.callRequest.snapshot?.productName}
+    </Typography>
+    {callData.callRequest.note && (
+      <Typography variant="body2">
+        <strong>Note:</strong> {callData.callRequest.note}
+      </Typography>
+    )}
+    <Chip size="small" label={callData.callRequest.status} sx={{ mt: 1 }} />
+  </Box>
+)}
 
         {/* ── Evidence gallery ──────────────────────────────────────── */}
         {ticket.evidence?.length > 0 && (
@@ -259,6 +319,7 @@ export default function SupportThreadAdmin({ ticketId }) {
                         <Chip size="small" variant="outlined" label={`${reasonPolicy.shippingPaidBy} pays shipping`} />
                       )}
                       {reasonPolicy.isInternational && <Chip size="small" variant="outlined" label="International" />}
+                      {conditionName && <Chip size="small" variant="outlined" label={`Condition: ${conditionName}`} />}
                     </Stack>
                   )}
                   <TextField
@@ -270,7 +331,7 @@ export default function SupportThreadAdmin({ ticketId }) {
                     sx={{ mb: 1.5 }}
                   />
                   <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
-                    {DECISION_OPTIONS.map((opt) => (
+                    {decisionOptions.map((opt) => (
                       <Button
                         key={opt.value}
                         size="small"
@@ -329,14 +390,14 @@ export default function SupportThreadAdmin({ ticketId }) {
               <TextField
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
-                placeholder={closed ? 'This ticket is closed' : 'Type a reply…'}
-                disabled={closed}
+                placeholder={closed ? 'This ticket is closed' : sellerPhase ? 'You can reply after the customer appeals' : 'Type a reply…'}
+                disabled={replyLocked}
                 fullWidth
                 multiline
                 maxRows={4}
                 size="small"
               />
-              <Button type="submit" variant="contained" endIcon={<FiSend />} disabled={sending || closed}>
+              <Button type="submit" variant="contained" endIcon={<FiSend />} disabled={sending || replyLocked}>
                 Send
               </Button>
             </Stack>
@@ -346,7 +407,7 @@ export default function SupportThreadAdmin({ ticketId }) {
                   size="small"
                   checked={isInternalNote}
                   onChange={(e) => setIsInternalNote(e.target.checked)}
-                  disabled={closed}
+                  disabled={replyLocked}
                 />
               }
               label={

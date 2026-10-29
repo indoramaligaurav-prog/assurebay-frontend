@@ -62,7 +62,7 @@ export default function SellerWidget() {
         color: "text.primary",
       }}
     >
-      Sell on <br /> Assuredbay
+      Sell on <br /> wreeo
     </Typography>
   </Stack>
 </Stack>

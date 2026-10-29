@@ -25,9 +25,8 @@ const Logo = ({ branding }) => {
       <Image
         src={getAssetUrl(isDarkMode ? branding.logoDark.url : branding.logoLight.url)}
         alt="Logo"
-        height={50}
-        width={200} // Will be overridden by aspect ratio automatically
-        style={{ height: 50, width: 'auto' }}
+        height={34}
+        width={140} // Will be overridden by aspect ratio automatically
       />
     </Box>
   );

@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 // components
 import RaiseQueryDialog from './raise-query-dialog';
 
+import * as api from 'src/services';
+
 GetHelpButton.propTypes = {
   orderId: PropTypes.string.isRequired,
   orderNo: PropTypes.string,
@@ -17,10 +19,32 @@ GetHelpButton.propTypes = {
   productId: PropTypes.string
 };
 
-export default function GetHelpButton({ orderId, orderNo, orderItemId, productName, productId }) {
+export default function GetHelpButton({ orderId, orderNo, orderItemId, productName, productId , itemStatus}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState(false);
+
+  const [checking, setChecking] = useState(false);
+
+  const handleClick = async () => {
+  if (!orderItemId) {
+    setOpen(true);
+    return;
+  }
+  setChecking(true);
+  try {
+    const res = await api.userGetOpenTicketForItem(orderItemId);
+    if (res?.ticket?._id) {
+      router.push(`/support/${res.ticket._id}`);
+      return;
+    }
+    setOpen(true);
+  } catch (err) {
+    setOpen(true); // if the check fails, still show the dialog; the server guard blocks duplicates
+  } finally {
+    setChecking(false);
+  }
+};
 
   return (
     <>
@@ -28,7 +52,8 @@ export default function GetHelpButton({ orderId, orderNo, orderItemId, productNa
         size="small"
         variant="text"
         startIcon={<FiHelpCircle size={14} />}
-        onClick={() => setOpen(true)}
+        onClick={handleClick}
+        disabled={checking}
         sx={{ fontSize: 12, minWidth: 0 }}
       >
         Get help
@@ -41,6 +66,7 @@ export default function GetHelpButton({ orderId, orderNo, orderItemId, productNa
         relatedOrder={orderId}
         relatedOrderItem={orderItemId}
         relatedProduct={productId}
+        itemStatus={itemStatus}
         onCreated={(ticket) => {
           setOpen(false);
           setToast(true);

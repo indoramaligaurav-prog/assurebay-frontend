@@ -32,6 +32,8 @@ import { signIn } from 'src/redux/slices/user';
 import { useUploadSingleFile } from '@/hooks/use-upload-file';
 import { profileSchema } from '@/validations';
 
+import SellerTierCard from '@/components/seller-tier-card';
+
 export default function GeneralProfileForm({ user, isLoading }) {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -129,6 +131,9 @@ export default function GeneralProfileForm({ user, isLoading }) {
     <FormikProvider value={formik}>
       <Form autoComplete="off" noValidate onSubmit={handleSubmit}>
         <Grid container spacing={2}>
+          <Grid size={12}>
+  <SellerTierCard />
+</Grid>
           <Grid size={{ md: 4, xs: 12 }}>
             <Card sx={{ py: 5, textAlign: 'center' }}>
               <CardContent>

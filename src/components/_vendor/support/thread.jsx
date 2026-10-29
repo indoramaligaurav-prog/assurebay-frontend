@@ -15,8 +15,13 @@ import {
   SUPPORT_STATUS_LABELS,
   SUPPORT_STATUS_CHIP_COLOR,
   SUPPORT_CATEGORY_LABELS,
-  ISSUE_DECISION_OPTIONS
+  ISSUE_DECISION_OPTIONS,
+    DECISIONS_BY_CONDITION
 } from 'src/constants/support';
+
+import TicketProductHeader from '@/components/support/ticket-product-header';
+
+import RequestCallDialog from './request-call-dialog';
 
 SupportThread.propTypes = { ticketId: PropTypes.string };
 
@@ -24,6 +29,13 @@ export default function SupportThread({ ticketId }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [reply, setReply] = useState('');
+
+  const [callOpen, setCallOpen] = useState(false);
+    const { data: callData } = useQuery({
+      queryKey: ['vendor-call-request', ticketId],
+      queryFn: () => api.vendorGetCallRequest(ticketId),
+      enabled: Boolean(ticketId)
+    });
 
   const { data, isPending: isLoading } = useQuery({
     queryKey: ['vendor-support-ticket', ticketId],
@@ -54,9 +66,16 @@ export default function SupportThread({ ticketId }) {
 
   const closed = ticket.status === 'closed';
 
+  const activeCall = ['requested', 'confirmed'].includes(callData?.callRequest?.status) ? callData.callRequest : null;
+
+  const callAllowed = ['resolved', 'closed'].includes(ticket.status);
+
+  const escalated = ticket.category === 'order_issue' && ticket.currentHandler === 'admin';
+const replyLocked = closed || escalated;
+
   const handleSend = (e) => {
     e.preventDefault();
-    if (!reply.trim() || closed) return;
+    if (!reply.trim() || replyLocked) return;
     sendReply({ message: reply });
   };
 
@@ -72,6 +91,7 @@ export default function SupportThread({ ticketId }) {
       </Stack>
 
       <Card sx={{ p: 3 }}>
+        <TicketProductHeader product={ticket.context?.product} orderNo={ticket.context?.orderNo} />
         {ticket.vendor && ticket.category === 'order_issue' && (
           <VendorDecisionPanel ticket={ticket} ticketId={ticketId} />
         )}
@@ -91,6 +111,42 @@ export default function SupportThread({ ticketId }) {
             variant="outlined"
           />
         </Stack>
+
+        {ticket.evidence?.length > 0 && (
+  <>
+    <Divider sx={{ mb: 2 }} />
+    <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+      Customer evidence ({ticket.evidence.length} photo{ticket.evidence.length === 1 ? '' : 's'})
+    </Typography>
+    <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1} sx={{ mb: 2 }}>
+      {ticket.evidence.map((ev, i) => (
+        <Box
+          key={i}
+          component="a"
+          href={`${process.env.NEXT_PUBLIC_API_URL}${ev.url}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{
+            width: 72,
+            height: 72,
+            borderRadius: 1,
+            overflow: 'hidden',
+            border: '1px solid',
+            borderColor: 'divider',
+            display: 'block'
+          }}
+        >
+          <Box
+            component="img"
+            src={`${process.env.NEXT_PUBLIC_API_URL}${ev.url}`}
+            alt="Evidence"
+            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Box>
+      ))}
+    </Stack>
+  </>
+)}
 
         <Divider sx={{ mb: 2 }} />
 
@@ -124,19 +180,37 @@ export default function SupportThread({ ticketId }) {
 
         <Divider sx={{ mb: 2 }} />
 
+        {escalated && (
+  <Alert severity="info" sx={{ mb: 1.5 }}>
+    The customer appealed to Wreeo support. They will handle this ticket from here.
+  </Alert>
+)}
+
+{callAllowed &&
+  (activeCall ? (
+    <Alert severity="info" sx={{ mb: 1.5 }}>
+      Call {activeCall.status} for {new Date(activeCall.slotStart).toLocaleString()}.
+    </Alert>
+  ) : (
+    <Button variant="outlined" sx={{ mb: 1.5 }} onClick={() => setCallOpen(true)}>
+      Request a call
+    </Button>
+  ))}
+<RequestCallDialog open={callOpen} onClose={() => setCallOpen(false)} ticketId={ticketId} />
+
         <form onSubmit={handleSend}>
           <Stack direction="row" spacing={1.5} alignItems="flex-end">
             <TextField
               value={reply}
               onChange={(e) => setReply(e.target.value)}
-              placeholder={closed ? 'This ticket is closed' : 'Type a reply…'}
-              disabled={closed}
+              placeholder={closed ? 'This ticket is closed' : escalated ? 'Escalated to Wreeo support' : 'Type a reply…'}
+              disabled={replyLocked}
               fullWidth
               multiline
               maxRows={4}
               size="small"
             />
-            <Button type="submit" variant="contained" endIcon={<FiSend />} disabled={sending || closed}>
+            <Button type="submit" variant="contained" endIcon={<FiSend />} disabled={sending || replyLocked}>
               Send
             </Button>
           </Stack>
@@ -167,6 +241,16 @@ function VendorDecisionPanel({ ticket, ticketId }) {
 
   const reasonInfo = context?.reasons?.find((r) => r.code === ticket.issueReason);
 
+const conditionKey = (context?.productCondition?.name || '')
+  .trim()
+  .toUpperCase()
+  .replace(/[\s-]+/g, '_');
+
+  const allowed = DECISIONS_BY_CONDITION[conditionKey];
+  const options = allowed
+    ? ISSUE_DECISION_OPTIONS.filter((opt) => allowed.includes(opt.value))
+    : ISSUE_DECISION_OPTIONS;
+
   return (
     <Card sx={{ p: 2.5, mb: 2, bgcolor: 'background.neutral' }}>
       <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
@@ -193,7 +277,7 @@ function VendorDecisionPanel({ ticket, ticketId }) {
         <Stack spacing={1.5} sx={{ mt: 1.5 }}>
           {error && <Alert severity="error">{error?.response?.data?.message || 'Could not submit decision.'}</Alert>}
           <TextField  select size="small" label="Your decision" value={decision} onChange={(e) => setDecision(e.target.value)}>
-            {ISSUE_DECISION_OPTIONS.map((opt) => (
+            {options.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
             ))}
           </TextField >
@@ -205,7 +289,7 @@ function VendorDecisionPanel({ ticket, ticketId }) {
       ) : (
         <Alert severity="info" sx={{ mt: 1.5 }}>
           {ticket.currentHandler === 'customer' && 'Waiting for the customer to respond to your decision.'}
-          {ticket.currentHandler === 'admin' && 'This ticket has been escalated to Assuredbay support.'}
+          {ticket.currentHandler === 'admin' && 'This ticket has been escalated to wreeo support.'}
         </Alert>
       )}
     </Card>

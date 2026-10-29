@@ -48,14 +48,6 @@ export default function UserList({ ...props }) {
 
   return (
     <RootStyled autoFocusItem={openUser} id="composition-menu">
-      <Box px={2}>
-        <Typography variant="body1" color="text.primary" fontWeight={600} noWrap>
-          {user?.firstName + ' ' + user?.lastName} {user?.role === 'admin' ? '( Admin )' : ''}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" pb={1} noWrap>
-          { user?.username || user?.email }
-        </Typography>
-      </Box>
       <Divider />
       <MenuItem
         className="menu-item"

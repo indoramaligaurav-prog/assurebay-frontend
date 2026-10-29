@@ -1119,3 +1119,28 @@ export const userRespondToVendorDecision = async ({ id, accepted, note }) => {
   const { data } = await http.patch(`/support/tickets/${id}/respond`, { accepted, note });
   return data;
 };
+
+export const userGetOpenTicketForItem = async (orderItemId) => {
+  const { data } = await http.get(`/support/tickets/by-item/${orderItemId}`);
+  return data;
+};
+
+export const vendorGetCallRequest = async (id) => {
+  const { data } = await http.get(`/vendor/support/tickets/${id}/call-request`);
+  return data;
+};
+
+export const vendorCreateCallRequest = async ({ id, payload }) => {
+  const { data } = await http.post(`/vendor/support/tickets/${id}/call-request`, payload);
+  return data;
+};
+
+export const adminGetCallRequest = async (id) => {
+  const { data } = await http.get(`/admin/support/tickets/${id}/call-request`);
+  return data;
+};
+
+export const vendorGetMyTier = async () => {
+  const { data } = await http.get('/vendor/tier');
+  return data;
+};

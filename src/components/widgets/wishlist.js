@@ -3,7 +3,7 @@ import React from 'react';
 import { useRouter } from '@bprogress/next';
 import PropTypes from 'prop-types';
 // mui
-import { IconButton, Stack, Typography, alpha } from '@mui/material';
+import { Badge, Stack, Typography } from '@mui/material';
 import { IoMdHeartEmpty } from 'react-icons/io';
 import { useSelector } from 'react-redux';
 
@@ -20,64 +20,19 @@ export default function WishlistWidget() {
 
   return (
     <>
-     <Stack
-  direction="row"
+    <Stack
   alignItems="center"
-  width="auto"
-  spacing={1}
-  sx={{
-    cursor: "pointer",
-    "&:hover": {
-      color: "primary.main",
-    },
-  }}
-  onClick={() => {
-    if (!isAuthenticated) {
-      router.push("/auth/sign-in");
-    } else {
-      router.push("/profile/wishlist");
-    }
-  }}
+  spacing={0.25}
+  onClick={() => router.push(isAuthenticated ? '/profile/wishlist' : '/auth/sign-in')}
+  sx={{ cursor: 'pointer', color: '#4a4240', '&:hover': { color: '#c74735' } }}
 >
-  {/* ICON */}
-  <IconButton
-    disableRipple
-    sx={{
-      p: 0,
-      m: 0,
-      bgcolor: "transparent",
-      border: "none",
-      "&:hover": {
-        bgcolor: "transparent",
-      },
-    }}
+  <Badge
+    badgeContent={wishlist?.length || 0}
+    sx={{ '& .MuiBadge-badge': { bgcolor: '#ed654f', color: '#fff', fontSize: 10, minWidth: 16, height: 16 } }}
   >
-    <IoMdHeartEmpty size={20} />
-  </IconButton>
-
-  {/* TEXT */}
-  <Stack gap={0}>
-    <Typography
-      sx={{
-        fontSize: "12px",
-        lineHeight: "14px",
-        color: "text.primary",
-      }}
-    >
-      Wishlist
-    </Typography>
-
-    <Typography
-      sx={{
-        fontSize: "12px",
-        lineHeight: "14px",
-        color: "text.secondary",
-      }}
-    >
-      {wishlist?.length || 0}{" "}
-      {wishlist?.length > 1 ? "Items" : "Item"}
-    </Typography>
-  </Stack>
+    <IoMdHeartEmpty size={22} />
+  </Badge>
+  <Typography sx={{ fontSize: 12, lineHeight: '14px', color: 'inherit' }}>Wishlist</Typography>
 </Stack>
     </>
   );

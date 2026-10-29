@@ -99,6 +99,7 @@ export default function TableCard({ data, isLoading }) {
                           orderItemId={item._id}
                           productName={item.productName}
                           productId={item.productId || item.product}
+                          itemStatus={item.vendorStatus}
                         />
                       </Stack>
                     </Stack>

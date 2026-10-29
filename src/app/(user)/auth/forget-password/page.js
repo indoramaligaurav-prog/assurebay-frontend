@@ -5,13 +5,13 @@ import ForgetPasswordMain from '@/components/_main/auth/forget-password';
 
 // Meta information
 export const metadata = {
-  title: 'Forgot Password | assuredbay - Reset Your Password and Regain Access',
+  title: 'Forgot Password | wreeo - Reset Your Password and Regain Access',
   description:
-    'Forgot your password? Reset it with assuredbay for seamless access to your account. Regain control and enjoy hassle-free browsing, secure transactions, and personalized experiences. Get back on track with assuredbay now!',
-  applicationName: 'assuredbay',
-  authors: 'assuredbay',
+    'Forgot your password? Reset it with wreeo for seamless access to your account. Regain control and enjoy hassle-free browsing, secure transactions, and personalized experiences. Get back on track with wreeo now!',
+  applicationName: 'wreeo',
+  authors: 'wreeo',
   keywords:
-    'forgot password, assuredbay, reset password, assuredbay password recovery, password reset, password recovery, account access, regain access, secure login, secure access, hassle-free login, personalized login, password recovery tool, forgotten password'
+    'forgot password, wreeo, reset password, wreeo password recovery, password reset, password recovery, account access, regain access, secure login, secure access, hassle-free login, personalized login, password recovery tool, forgotten password'
 };
 
 export default function ForgetPassword() {

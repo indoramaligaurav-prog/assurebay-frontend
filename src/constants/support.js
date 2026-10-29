@@ -37,7 +37,7 @@ export const SUPPORT_STATUS_LABELS = {
   awaiting_reply: 'Awaiting reply',
   awaiting_vendor_response: 'Awaiting your response',
   awaiting_customer_decision: 'Awaiting customer',
-  escalated: 'Escalated to Assuredbay',
+  escalated: 'Escalated to wreeo',
   resolved: 'Resolved',
   closed: 'Closed'
 };
@@ -64,4 +64,13 @@ export const ISSUE_DECISION_OPTIONS = [
 export const SUPPORT_RAISED_BY_ROLE_LABELS = {
   user: 'Customer',
   vendor: 'Vendor'
+};
+
+export const DECISIONS_BY_CONDITION = {
+  NEW: ['return_refund', 'refund_only', 'replacement', 'declined'],
+  REFURBISHED: ['return_refund', 'refund_only', 'replacement', 'repair', 'declined'],
+  RECONDITIONED: ['return_refund', 'refund_only', 'replacement', 'repair', 'declined'],
+  OVERHAULED: ['return_refund', 'refund_only', 'replacement', 'repair', 'declined'],
+  USED: ['return_refund', 'refund_only', 'repair', 'declined'],
+  AS_IS: ['refund_only', 'declined']
 };

@@ -105,6 +105,12 @@ export default function AdminShopMain() {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
 
+useEffect(() => {
+  if (user?.accountType === 'business') {
+    setShopName((prev) => prev || user.firstName);
+  }
+}, [user]);
+
   useEffect(() => {
     if (!user) return;
 

@@ -26,12 +26,12 @@ import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 
 const FOOTER_LINKS = [
   {
-    heading: "Sell on AssuredBay",
+    heading: "Sell on wreeo",
     links: [
       "Start Selling",
       "How to Sell",
       "Business Sellers",
-      "Why Sell on AssuredBay",
+      "Why Sell on wreeo",
       "Commission Structure",
       "Global Reach",
       "Seller Center",
@@ -39,7 +39,7 @@ const FOOTER_LINKS = [
     ]
   },
   {
-    heading: "Buy on AssuredBay",
+    heading: "Buy on wreeo",
     links: [
       "Browse Categories",
       "How to Buy",
@@ -52,7 +52,7 @@ const FOOTER_LINKS = [
   {
     heading: "Company",
     links: [
-      "About AssuredBay",
+      "About wreeo",
       "Leadership",
       "Careers",
       "Newsroom",

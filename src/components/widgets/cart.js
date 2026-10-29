@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { useState , useEffect,useMemo  } from 'react';
 import { formatPrice } from '@/utils/formatPrice';
 // mui
-import { IconButton, Stack, Typography, alpha } from '@mui/material';
+import { Badge, Stack, Typography } from '@mui/material';
 import { HiOutlineShoppingBag } from 'react-icons/hi2';
 
 
@@ -49,7 +49,7 @@ export default function CartWidget() {
         return;
       }
 
-      console.log('Formatting cart total:', rawTotal, checkout.cart?.[0]?.pid || null , user?._id ); 
+  
 
       try {
         const formatted = await formatPrice({
@@ -74,59 +74,21 @@ export default function CartWidget() {
   }, [rawTotal, user, checkout.cart,currency]);
 
   return (
-   <Stack
+<Stack
   component={Link}
   href="/cart"
-  direction="row"
-  spacing={1}
+  title={displayTotal ? String(displayTotal) : ''}
   alignItems="center"
-  width="auto"
-  sx={{
-    cursor: "pointer",
-    textDecoration: "none",
-    "&:hover": {
-      color: "primary.main",
-    },
-  }}
+  spacing={0.25}
+  sx={{ textDecoration: 'none', color: '#4a4240', '&:hover': { color: '#c74735' } }}
 >
-  {/* ICON */}
-  <IconButton
-    disableRipple
-    sx={{
-      p: 0,
-      m: 0,
-      bgcolor: "transparent",
-      border: "none",
-      "&:hover": {
-        bgcolor: "transparent",
-      },
-    }}
+  <Badge
+    badgeContent={totalItems}
+    sx={{ '& .MuiBadge-badge': { bgcolor: '#ed654f', color: '#fff', fontSize: 10, minWidth: 16, height: 16 } }}
   >
-    <HiOutlineShoppingBag size={20} />
-  </IconButton>
-
-  {/* TEXT */}
-  <Stack gap={0}>
-    <Typography
-      sx={{
-        fontSize: "12px",
-        lineHeight: "14px",
-        color: "text.primary",
-      }}
-    >
-       ({totalItems})
-    </Typography>
-
-    <Typography
-      sx={{
-        fontSize: "12px",
-        lineHeight: "14px",
-        color: "text.secondary",
-      }}
-    >
-      {displayTotal}
-    </Typography>
-  </Stack>
+    <HiOutlineShoppingBag size={22} />
+  </Badge>
+  <Typography sx={{ fontSize: 12, lineHeight: '14px', color: 'inherit' }}>Cart</Typography>
 </Stack>
   );
 }
