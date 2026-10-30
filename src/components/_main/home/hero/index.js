@@ -40,7 +40,7 @@ export default function Hero({ data, banners , allcategories  }) {
 
   return (
    <Container maxWidth="xl">
-  <Stack direction="row" gap={2} mt={2}  alignItems="flex-start" bgcolor="#fcfbf7">
+  <Stack direction="row" gap={2} mt={2}  alignItems="flex-start">
 
     {/* LEFT CATEGORY */}
     <Box
@@ -59,7 +59,7 @@ export default function Hero({ data, banners , allcategories  }) {
    <Stack spacing={1}
    sx={{
     padding: "15px 15px",
-    background:'#fcfbf7',
+  
     borderTop: "1px solid #ccc"
    }}
    >
@@ -207,7 +207,6 @@ export default function Hero({ data, banners , allcategories  }) {
   justifyContent="space-between"
   alignItems="center"
   sx={{
-    background: "#fcfbf7",
     p: 2,
     borderRadius: 2,
     border: "1px solid #eee",

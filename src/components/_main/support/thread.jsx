@@ -17,9 +17,17 @@ import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_CHIP_COLOR, SUPPORT_CATEGORY_LABE
 
 import TicketProductHeader from '@/components/support/ticket-product-header';
 
-SupportThread.propTypes = { ticketId: PropTypes.string };
+SupportThread.propTypes = {
+  ticketId: PropTypes.string,
+  onBack: PropTypes.func,
+  inDrawer: PropTypes.bool,
+};
 
-export default function SupportThread({ ticketId }) {
+export default function SupportThread({
+  ticketId,
+  onBack,
+  inDrawer = false,
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [reply, setReply] = useState('');
@@ -49,7 +57,29 @@ export default function SupportThread({ ticketId }) {
 
   const ticket = data?.ticket;
   const messages = data?.messages || [];
-  if (!ticket) return null;
+  if (!ticket) {
+  return (
+    <Box sx={{ py: 6, textAlign: 'center' }}>
+      <Typography fontWeight={600}>
+        Ticket not found
+      </Typography>
+
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ mt: 1, mb: 2 }}
+      >
+        This ticket may have been removed or is no longer available.
+      </Typography>
+
+      {onBack && (
+        <Button variant="outlined" onClick={onBack}>
+          Back to inbox
+        </Button>
+      )}
+    </Box>
+  );
+}
   const closed = ticket.status === 'closed';
 
   const handleSend = (e) => {
@@ -58,18 +88,50 @@ export default function SupportThread({ ticketId }) {
     sendReply({ message: reply });
   };
 
-  return (
-    <Box sx={{ maxWidth: 720, mx: 'auto', py: 4, px: 2 }}>
+ return (
+  <Box
+    sx={{
+      width: '100%',
+      maxWidth: inDrawer ? 'none' : 720,
+      mx: 'auto',
+      py: inDrawer ? 0 : 4,
+      px: inDrawer ? 0 : 2,
+    }}
+  >
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <IconButton onClick={() => router.push('/support')} size="small">
-          <FiArrowLeft />
-        </IconButton>
+        <IconButton
+  onClick={() => {
+    if (onBack) {
+      onBack();
+    } else {
+      router.push('/support');
+    }
+  }}
+  size="small"
+  aria-label="Back to support inbox"
+  sx={{
+    color: '#6c747b',
+    bgcolor: '#f6f7f8',
+    '&:hover': {
+      bgcolor: '#eceeef',
+    },
+  }}
+>
+  <FiArrowLeft />
+</IconButton>
         <Typography variant="body2" color="text.secondary">
           Back to tickets
         </Typography>
       </Stack>
 
-      <Card sx={{ p: 3 }}>
+      <Card
+  sx={{
+    p: inDrawer ? 1.5 : 3,
+    borderRadius: '12px',
+    boxShadow: inDrawer ? 'none' : undefined,
+    border: inDrawer ? '1px solid #eeeeee' : 'none',
+  }}
+>
         <TicketProductHeader product={ticket.context?.product} orderNo={ticket.context?.orderNo} />
         {ticket.category === 'order_issue' && ticket.vendorDecision?.decision && ticket.currentHandler === 'customer' && (
             <VendorDecisionResponse ticket={ticket} ticketId={ticketId} />

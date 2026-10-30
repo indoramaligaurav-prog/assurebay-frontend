@@ -196,9 +196,7 @@ const posts = [
     ))}
   </Stack>
 </Box> */}
-      <ProductList sx={{
-        background:"#fcfbf7 !important"
-      }}
+      <ProductList 
         title="Recently Viewed Products"
         path="?featured=true"
         data={featuredProducts?.data || []}
@@ -207,9 +205,7 @@ const posts = [
 
         
     
-      <ProductList sx={{
-        background:"#fcfbf7 !important"
-      }}
+      <ProductList 
         title="Featured Products"
         description="Discover a curated selection of our most loved products — handpicked for quality, popularity, and style."
         path="?featured=true"

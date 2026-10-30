@@ -54,7 +54,7 @@ export default async function RootLayout({ children }) {
   const { data: branding } = await brandingRes.json();
   return (
     <html lang={'en'}>
-      <body  className={inter.className}  data-new-gr-c-s-check-loaded="14.1251.0" data-gr-ext-installed="" style={{ backgroundColor: "#fcfbf7" }}>
+      <body  className={inter.className}  data-new-gr-c-s-check-loaded="14.1251.0" data-gr-ext-installed="" style={{ backgroundColor: "#fff" }}>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <script src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js" async></script>
         <GoogleTagManager gtmId={main.gtmId} />

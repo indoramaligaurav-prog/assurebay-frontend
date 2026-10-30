@@ -8,7 +8,7 @@ import { Typography, Container, Stack } from '@mui/material';
 import ProductsCarousel from '@/components/carousels/products-grid-slider';
 export default function Index({ data, title, description, path }) {
   return (
-    <Container maxWidth="xl" xs={{background:"#fcfbf7 !important"}}>
+    <Container maxWidth="xl" xs={{background:"#fff !important"}}>
       <Stack gap={3}>
         <Stack>
           <Typography sx={{

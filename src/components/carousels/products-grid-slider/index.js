@@ -56,7 +56,7 @@ function ProductsCarousel({ data, isLoading, query }) {
     ));
 
   return (
-    <Paper elevation={0} sx={{ position: 'relative', width: '100%', overflow: 'hidden', background: "#fcfbf7" }}>
+    <Paper elevation={0} sx={{ position: 'relative', width: '100%', overflow: 'hidden', background: "#fff" }}>
       <Box
         ref={emblaRef}
         sx={{
