@@ -44,18 +44,16 @@ function Row({ label, children }) {
       sx={{
         py: 1.5,
         borderBottom: '1px solid',
-        borderColor: 'divider',
+        borderColor: '#eef2f5',
         '&:last-child': { borderBottom: 'none' },
       }}
     >
       <Typography
-        variant="body2"
-        fontWeight={600}
-        sx={{ width: 100, flexShrink: 0, color: 'text.primary' }}
+        sx={{ width: 92, flexShrink: 0, fontSize: 12, fontWeight: 600, color: '#485f70' }}
       >
-        {label}
+        {label.replace(':', '')}
       </Typography>
-      <Box flex={1}>{children}</Box>
+      <Box flex={1} minWidth={0}>{children}</Box>
     </Stack>
   );
 }
@@ -111,61 +109,87 @@ const handleUpdate = () => {
   onZipChange(pendingCountry.code, pendingZip);
 };
 
-  return (
+    return (
     <Box
-      mt={3}
-      sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}
+      mt={2.5}
+      sx={{ border: '1px solid #e1e9ee', borderRadius: '12px', bgcolor: '#fbfcfd', overflow: 'hidden' }}
     >
       {/* ── Header ── */}
-      <Box sx={{ px: 2, py: 1.2, bgcolor: 'action.selected' }}>
-        <Typography variant="subtitle2" fontWeight={700}>
-          Shipping, returns &amp; payments
-        </Typography>
-      </Box>
+      <Stack direction="row" alignItems="center" spacing={1.25} sx={{ px: 2, py: 1.5 }}>
+        <Box
+          sx={{
+            width: 33, height: 33, borderRadius: '9px', bgcolor: '#edf3f6', color: '#698595',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}
+        >
+          <LocalShippingOutlinedIcon sx={{ fontSize: 18 }} />
+        </Box>
+        <Box minWidth={0}>
+          <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+            Shipping, returns &amp; payments
+          </Typography>
+          <Typography sx={{ fontSize: 10.5, color: '#7a8d9a', lineHeight: 1.6 }}>
+            Enter your country and ZIP/pincode for the most accurate shipping cost and delivery estimate.
+          </Typography>
+        </Box>
+      </Stack>
 
-      <Box sx={{ px: 2 }}>
+      <Box sx={{ px: 2, pb: 0.5, borderTop: '1px solid #e4ebf0' }}>
 
         {/* ── Delivery to ── */}
         <Stack
-          direction="row" spacing={1} alignItems="center" py={1.5}
-          sx={{ borderBottom: '1px solid', borderColor: 'divider' }}
+          direction="row" alignItems="center" flexWrap="wrap" gap={1} py={1.5}
+          sx={{ borderBottom: '1px solid #eef2f5' }}
         >
-          <Typography variant="body2" fontWeight={600} sx={{ width: 100, flexShrink: 0 }}>
-            Delivery to
-          </Typography>
-         <Autocomplete
-  size="small"
-  options={countryOptions}
-  getOptionLabel={(o) => o?.label || ''}
-  value={pendingCountry}
-  onChange={(_, v) => setPendingCountry(v)}
-  sx={{ width: 180 }}
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      placeholder="Country/region"
-      sx={{ '& .MuiInputBase-input': { fontSize: 13 } }}
-    />
-  )}
-/>
-<TextField
-  size="small"
-  placeholder="ZIP / Pincode"
-  value={pendingZip}
-  onChange={(e) => setPendingZip(e.target.value)}
-  sx={{ width: 120, '& .MuiInputBase-input': { fontSize: 13 } }}
-/>
-<Button
-  variant="contained" size="small"
-  onClick={handleUpdate}
-  disabled={!pendingCountry || ratesLoading}
-  sx={{ fontSize: 12, py: 0.7, px: 2, minWidth: 80 }}
->
-  {ratesLoading
-    ? <CircularProgress size={12} color="inherit" />
-    : 'Update'
-  }
-</Button>
+          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ width: 92, flexShrink: 0 }}>
+            <LocationOnOutlinedIcon sx={{ fontSize: 14, color: '#7c909f' }} />
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#485f70' }}>
+              Delivery to
+            </Typography>
+          </Stack>
+
+          <Autocomplete
+            size="small"
+            options={countryOptions}
+            getOptionLabel={(o) => o?.label || ''}
+            value={pendingCountry}
+            onChange={(_, v) => setPendingCountry(v)}
+            sx={{
+              flex: '1 1 150px', minWidth: 140,
+              '& .MuiOutlinedInput-root': { borderRadius: '8px', bgcolor: '#fff' },
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="Country/region"
+                sx={{ '& .MuiInputBase-input': { fontSize: 12.5 } }}
+              />
+            )}
+          />
+          <TextField
+            size="small"
+            placeholder="ZIP / Pincode"
+            value={pendingZip}
+            onChange={(e) => setPendingZip(e.target.value)}
+            sx={{
+              flex: '0 1 120px', minWidth: 100,
+              '& .MuiInputBase-input': { fontSize: 12.5 },
+              '& .MuiOutlinedInput-root': { borderRadius: '8px', bgcolor: '#fff' },
+            }}
+          />
+          <Button
+            variant="contained" size="small" disableElevation
+            onClick={handleUpdate}
+            disabled={!pendingCountry || ratesLoading}
+            sx={{
+              fontSize: 12, fontWeight: 600, py: 0.8, px: 2, minWidth: 76,
+              textTransform: 'none', borderRadius: '8px',
+              bgcolor: '#eaf0f4', color: '#4a687d',
+              '&:hover': { bgcolor: '#dde7ee' },
+            }}
+          >
+            {ratesLoading ? <CircularProgress size={12} color="inherit" /> : 'Update'}
+          </Button>
         </Stack>
 
         {/* ── Accuracy note ── */}
@@ -194,15 +218,22 @@ const handleUpdate = () => {
               </Stack>
             ) : bestRate ? (
               <>
-                <Stack direction="row" spacing={0.75} alignItems="center">
-                  <LocalShippingOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-                  <Typography variant="body2">
-                    <b>
-                      {bestRate.charge === 0
-                        ? 'Free'
-                        : `${bestRate.currency} ${Number(bestRate.charge).toLocaleString()}`}
-                    </b>
-                    {' '}{bestRate.serviceName}
+                               <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                  <Stack direction="row" spacing={0.75} alignItems="center" minWidth={0}>
+                    <LocalShippingOutlinedIcon sx={{ fontSize: 15, color: '#7c909f' }} />
+                    <Typography sx={{ fontSize: 13, fontWeight: 500 }} noWrap>
+                      {bestRate.serviceName}
+                    </Typography>
+                  </Stack>
+                  <Typography
+                    sx={{
+                      fontSize: 15, fontWeight: 600, letterSpacing: '-0.3px', whiteSpace: 'nowrap',
+                      color: bestRate.charge === 0 ? '#37704d' : 'text.primary',
+                    }}
+                  >
+                    {bestRate.charge === 0
+                      ? 'Free'
+                      : `${bestRate.currency} ${Number(bestRate.charge).toLocaleString()}`}
                   </Typography>
                 </Stack>
 

@@ -22,7 +22,7 @@ import {
   Chip,
 } from '@mui/material';
 import Incrementer from '@/components/incrementer';
-import { FiShoppingCart } from 'react-icons/fi';
+import { FiShoppingCart, FiArrowRight } from 'react-icons/fi';
 import { IoBagCheckOutline } from 'react-icons/io5';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { useState, useEffect, useMemo } from 'react';
@@ -219,160 +219,206 @@ export default function ProductDetailsSummary({ product, selectedAttrs, setSelec
   return (
     <Box mt={2}>
 
-      {/* ── PRICE BLOCK ── */}
-      {product.pricingMode === 'declare' && (
-        <Box mb={2}>
-          {hasDiscount ? (
-            <>
-              <Stack direction="row" spacing={1.5} alignItems="baseline" flexWrap="wrap">
-                <Typography variant="h4" fontWeight={700} color="error.main">
-                  {displayPrice}
-                </Typography>
-                <Typography variant="h6" color="text.disabled" sx={{ textDecoration: 'line-through' }}>
-                  {displayMrp}
-                </Typography>
-                <Chip
-                  label={`${discountPct}% off`}
-                  size="small"
-                  sx={{ bgcolor: 'error.main', color: '#fff', fontWeight: 700, fontSize: 12 }}
-                />
-              </Stack>
-              <Typography variant="caption" color="text.secondary">
-                MRP: {displayMrp} (inclusive of all taxes)
-              </Typography>
-            </>
-          ) : (
-            <Typography variant="h4" fontWeight={700}>{displayPrice}</Typography>
-          )}
+            {/* ── PRICE BLOCK ── */}
+      {product.pricingMode === 'declare' && hasDiscount ? (
+        <Box mb={0.5}>
+          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+            <Typography sx={{ fontSize: { xs: 30, md: 34 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1.2 }}>
+              {displayPrice}
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: '#86939c', textDecoration: 'line-through' }}>
+              {displayMrp}
+            </Typography>
+            <Chip
+              label={`${discountPct}% off`}
+              size="small"
+              sx={{ bgcolor: '#fff0e9', color: '#a3452d', fontWeight: 600, fontSize: 12, borderRadius: '7px', height: 24 }}
+            />
+          </Stack>
+          <Typography sx={{ fontSize: 11, color: '#72818c', mt: 0.75 }}>
+            MRP {displayMrp} · Includes all taxes
+          </Typography>
         </Box>
+      ) : (
+        <Typography sx={{ fontSize: { xs: 30, md: 34 }, fontWeight: 700, letterSpacing: '-1px', lineHeight: 1.2 }}>
+          {displayPrice}
+        </Typography>
       )}
 
-      {product.pricingMode !== 'declare' && (
-        <Typography variant="h4" fontWeight={700} mb={2}>{displayPrice}</Typography>
-      )}
+      {/* ── STOCK ── */}
+      <Stack direction="row" spacing={0.75} alignItems="center" mt={1.5} mb={2.5}
+        sx={{ fontSize: 12, color: stock > 0 ? '#456f57' : 'error.main' }}>
+        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: stock > 0 ? '#558569' : 'error.main' }} />
+        <span>{stock > 0 ? 'In stock' : 'Out of stock'}</span>
+        {stock > 0 && (
+          <Box component="span" sx={{ fontSize: 11, px: 0.75, py: '1px', borderRadius: '4px', bgcolor: '#edf5ef' }}>
+            {stock}
+          </Box>
+        )}
+      </Stack>
 
-      <Typography color={stock > 0 ? 'success.main' : 'error.main'} mb={1}>
-        {stock > 0 ? `In Stock (${stock})` : 'Out of Stock'}
-      </Typography>
+      {/* ── VARIATION SELECTORS ── */}
+      {product.hasVariations && (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+            columnGap: 2.5,
+            rowGap: 2,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            pt: 2,
+          }}
+        >
+          {product.variationAttributes.map((attr) => {
+            const selected = selectedAttrs[attr.name];
+            return (
+              <Box key={attr.name}>
+                <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1.25 }}>
+                  {attr.name}
+                  {selected && selected !== 'default' && (
+                    <Box component="span" sx={{ ml: 1.25, fontSize: 12, fontWeight: 400, color: '#72838f' }}>
+                      {selected}
+                    </Box>
+                  )}
+                </Typography>
 
-      {/* ── VARIATION SELECTORS — chip style ── */}
-      {product.hasVariations &&
-        product.variationAttributes.map((attr) => {
-          const selected = selectedAttrs[attr.name];
-          return (
-            <Box key={attr.name} mt={2.5}>
-              <Typography variant="body2" fontWeight={700} mb={1} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 11 }}>
-                {attr.name}
-                {selected && selected !== 'default' && (
-                  <Box component="span" sx={{ ml: 1, color: 'text.primary', textTransform: 'none', letterSpacing: 0, fontWeight: 600, fontSize: 13 }}>
-                    : {selected}
-                  </Box>
-                )}
-              </Typography>
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {attr.values.map((val) => {
+                    const isActive = selected === val;
+                    const isColor = /^#[0-9a-f]{3,6}$/i.test(val) || /^(red|blue|green|black|white|yellow|pink|grey|gray|orange|purple|navy|beige|brown|teal|maroon|olive|coral|cyan|magenta|lime|indigo|violet|gold|silver|cream|ivory|khaki|lavender|mint|rose|tan|salmon|charcoal|slate)$/i.test(val);
 
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                {attr.values.map((val) => {
-                  const isActive = selected === val;
-                  // Detect if values look like colors (hex / css color names)
-                  const isColor = /^#[0-9a-f]{3,6}$/i.test(val) || /^(red|blue|green|black|white|yellow|pink|grey|gray|orange|purple|navy|beige|brown|teal|maroon|olive|coral|cyan|magenta|lime|indigo|violet|gold|silver|cream|ivory|khaki|lavender|mint|rose|tan|salmon|charcoal|slate)$/i.test(val);
+                    if (isColor) {
+                      return (
+                        <Stack
+                          key={val}
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}
+                          onClick={() => { setSelectedAttrs((prev) => ({ ...prev, [attr.name]: val })); setQty(1); }}
+                          sx={{
+                            px: 1.4, minHeight: 36,
+                            border: '1px solid',
+                            borderColor: isActive ? '#708391' : 'divider',
+                            bgcolor: isActive ? '#f3f6f8' : 'transparent',
+                            borderRadius: '9px',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            userSelect: 'none',
+                            '&:hover': { borderColor: '#708391' },
+                          }}
+                        >
+                          <Box sx={{
+                            width: 18, height: 18, borderRadius: '50%',
+                            bgcolor: val.startsWith('#') ? val : val.toLowerCase(),
+                            border: '1px solid #d9e0e4',
+                          }} />
+                          <span style={{ textTransform: 'capitalize' }}>{val}</span>
+                        </Stack>
+                      );
+                    }
 
-                  if (isColor) {
                     return (
                       <Box
                         key={val}
                         onClick={() => { setSelectedAttrs((prev) => ({ ...prev, [attr.name]: val })); setQty(1); }}
-                        title={val}
                         sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          bgcolor: val.startsWith('#') ? val : val.toLowerCase(),
+                          minWidth: 44, height: 38, px: 1.5,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: '1px solid',
+                          borderColor: isActive ? '#ed9b7d' : '#dae3e9',
+                          bgcolor: isActive ? '#fff0e9' : 'transparent',
+                          color: isActive ? '#8e3c27' : 'text.primary',
+                          fontWeight: isActive ? 600 : 500,
+                          fontSize: 13,
+                          borderRadius: '9px',
                           cursor: 'pointer',
-                          border: isActive ? '3px solid' : '2px solid',
-                          borderColor: isActive ? 'primary.main' : 'divider',
-                          boxShadow: isActive ? '0 0 0 2px white inset' : 'none',
-                          transition: 'transform 0.15s',
-                          '&:hover': { transform: 'scale(1.15)' },
+                          userSelect: 'none',
+                          transition: 'all .15s',
+                          '&:hover': { borderColor: '#ed9b7d' },
                         }}
-                      />
+                      >
+                        {val.toUpperCase()}
+                      </Box>
                     );
-                  }
+                  })}
+                </Stack>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
 
-                  return (
-                    <Box
-                      key={val}
-                      onClick={() => { setSelectedAttrs((prev) => ({ ...prev, [attr.name]: val })); setQty(1); }}
-                      sx={{
-                        px: 2,
-                        py: 0.75,
-                        border: '1.5px solid',
-                        borderColor: isActive ? 'primary.main' : 'divider',
-                        borderRadius: 1.5,
-                        cursor: 'pointer',
-                        bgcolor: isActive ? 'primary.main' : 'transparent',
-                        color: isActive ? 'primary.contrastText' : 'text.primary',
-                        typography: 'body2',
-                        fontWeight: isActive ? 700 : 400,
-                        userSelect: 'none',
-                        transition: 'all 0.15s',
-                        '&:hover': {
-                          borderColor: 'primary.main',
-                          bgcolor: isActive ? 'primary.dark' : 'primary.50',
-                        },
-                      }}
-                    >
-                      {val.toUpperCase()}
-                    </Box>
-                  );
-                })}
-              </Stack>
-            </Box>
-          );
-        })}
-
-      {/* ── ACTIONS ── */}
-      <Stack spacing={2} mt={3}>
+      {/* ── QUANTITY + ACTIONS ── */}
+      <Stack spacing={1.25} mt={2.5}>
         {!requiresQuote ? (
           <>
-            <Incrementer
-              quantity={qty}
-              stockQuantity={stock}
-              onIncrease={() => setQty((q) => q + 1)}
-              onDecrease={() => setQty((q) => Math.max(1, q - 1))}
-            />
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
+              <Typography sx={{ fontSize: 13, fontWeight: 500 }}>Quantity</Typography>
+              <Incrementer
+                quantity={qty}
+                stockQuantity={stock}
+                onIncrease={() => setQty((q) => q + 1)}
+                onDecrease={() => setQty((q) => Math.max(1, q - 1))}
+              />
+            </Stack>
+
             {needsVariantSelection && (
-              <Typography variant="body2" color="error.main">
+              <Typography sx={{ fontSize: 12, color: '#a54332' }}>
                 Please select all options above to continue
               </Typography>
             )}
+
             <Button
-              startIcon={<FiShoppingCart />}
               variant="contained"
-              disabled={stock === 0 || isMaxQty || needsVariantSelection}
-              onClick={handleAddCart}
-            >
-              Add to Cart
-            </Button>
-            <Button
-              startIcon={<IoBagCheckOutline />}
-              variant="outlined"
+              disableElevation
+              endIcon={<FiArrowRight />}
               disabled={stock === 0 || needsVariantSelection}
               onClick={handleBuyNow}
+              sx={{
+                justifyContent: 'space-between',
+                minHeight: 44, px: 2, borderRadius: '8px',
+                fontSize: 14, fontWeight: 600, textTransform: 'none',
+                bgcolor: '#f46b45', color: '#361b13',
+                boxShadow: '0 4px 12px rgba(216,83,44,.10)',
+                '&:hover': { bgcolor: '#ff805b' },
+              }}
             >
-              Buy Now
+              Buy it now
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<FiShoppingCart />}
+              disabled={stock === 0 || isMaxQty || needsVariantSelection}
+              onClick={handleAddCart}
+              sx={{
+                minHeight: 40, borderRadius: '8px', textTransform: 'none',
+                fontSize: 13, fontWeight: 500,
+                borderColor: '#dce5eb', color: '#566e80', bgcolor: '#fff',
+                '&:hover': { bgcolor: '#f4f7f9', borderColor: '#dce5eb' },
+              }}
+            >
+              Add to cart
             </Button>
           </>
         ) : (
           <Button
             variant="contained"
-            color="primary"
+            disableElevation
             fullWidth
             onClick={() => {
               if (!user) { toast.error('Please login to request a quote'); return; }
               setOpenQuote(true);
             }}
+            sx={{
+              minHeight: 44, borderRadius: '8px', textTransform: 'none',
+              fontSize: 14, fontWeight: 600,
+              bgcolor: '#f46b45', color: '#361b13',
+              '&:hover': { bgcolor: '#ff805b' },
+            }}
           >
-            Request a Quote
+            Request a quote
           </Button>
         )}
       </Stack>

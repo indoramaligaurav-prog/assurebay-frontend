@@ -5,9 +5,10 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import {
   Box, Container, Grid, Stack, Typography,
-  Divider, Chip,
+  Divider, IconButton,
 } from '@mui/material';
-
+import ChevronLeftIcon  from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import ProductDetailsSummary from 'src/components/_main/product/summary';
 import SellerPolicies from 'src/components/_main/product/SellerPolicies';
@@ -26,6 +27,11 @@ const DETAIL_LABELS = {
   weightUnit:    'Weight Unit',
 };
 
+const arrowSx = (side) => ({
+  position: 'absolute', top: '50%', transform: 'translateY(-50%)', [side]: 14,
+  width: 36, height: 36, bgcolor: '#fff', border: '1px solid #e2e7ea',
+  boxShadow: '0 2px 8px rgba(38,59,72,.06)', '&:hover': { bgcolor: '#fff' },
+});
 
 function StarRating({ rating = 0 }) {
   const full  = Math.floor(rating);
@@ -155,6 +161,12 @@ useEffect(() => {
 
   if (!data) return null;
 
+  const selectedIndex = Math.max(0, galleryImages.findIndex((i) => i.url === selectedImage));
+const goTo = (dir) => {
+  if (!galleryImages.length) return;
+  setSelectedImage(galleryImages[(selectedIndex + dir + galleryImages.length) % galleryImages.length].url);
+};
+
   const ad = data.additionalDetails || {};
 
   const flatDetails = Object.entries(DETAIL_LABELS)
@@ -174,95 +186,139 @@ useEffect(() => {
 
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Grid container spacing={5}>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+
+      {/* BREADCRUMB */}
+      <Stack direction="row" alignItems="center" spacing={0.75} mb={2.5} flexWrap="wrap"
+        sx={{ fontSize: 12, color: 'text.secondary' }}>
+        {[data.category?.name, data.subCategory?.name, data.childCategory?.name]
+          .filter(Boolean)
+          .map((name, i, arr) => (
+            <React.Fragment key={name}>
+              <Typography variant="caption" color={i === arr.length - 1 ? 'text.primary' : 'text.secondary'}
+                fontWeight={i === arr.length - 1 ? 500 : 400}>
+                {name}
+              </Typography>
+              {i < arr.length - 1 && <ChevronRightIcon sx={{ fontSize: 14, color: 'text.disabled' }} />}
+            </React.Fragment>
+          ))}
+      </Stack>
+
+      <Grid container spacing={{ xs: 3, md: 5 }}>
 
         {/* ════════ LEFT — GALLERY ════════ */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box sx={{ display: 'flex', gap: 2, p: 3, borderRadius: 3 }}>
-            <Stack direction="column" spacing={1}>
-              {galleryImages.map((img, i) => (
-                <Box
-                  key={i}
-                  onClick={() => setSelectedImage(img.url)}
-                  sx={{
-                    border: selectedImage === img.url ? '2px solid' : '1px solid',
-                    borderColor: selectedImage === img.url ? 'primary.main' : 'divider',
-                    p: 0.5,
-                    cursor: 'pointer',
-                    borderRadius: 1,
-                  }}
-                >
-                  <Image
-                    src={getAssetUrl(img.url)}
-                    width={70}
-                    height={70}
-                    alt=""
-                    style={{ objectFit: 'cover', borderRadius: 4 }}
-                  />
-                </Box>
-              ))}
+        <Grid size={{ xs: 12, md: 6.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '72px minmax(0, 1fr)', gap: 1.5, alignItems: 'start' }}>
+
+            {/* thumbnails */}
+            <Stack spacing={1.25}>
+              {galleryImages.map((img, i) => {
+                const active = selectedImage === img.url;
+                return (
+                  <Box
+                    key={i}
+                    onClick={() => setSelectedImage(img.url)}
+                    sx={{
+                      border: '1.5px solid',
+                      borderColor: active ? '#ed9b7d' : 'divider',
+                      borderRadius: '11px',
+                      p: 0.5,
+                      cursor: 'pointer',
+                      bgcolor: '#fff',
+                      textAlign: 'center',
+                      boxShadow: active ? '0 0 0 1px #ed9b7d' : 'none',
+                      transition: 'all .15s',
+                    }}
+                  >
+                    <Box sx={{ bgcolor: '#f5f5f5', borderRadius: '8px', overflow: 'hidden', lineHeight: 0 }}>
+                      <Image
+                        src={getAssetUrl(img.url)}
+                        width={70}
+                        height={70}
+                        alt=""
+                        style={{ width: '100%', height: 'auto', aspectRatio: '1', objectFit: 'cover' }}
+                      />
+                    </Box>
+                    {(img.label || img.alt) && (
+                      <Typography variant="caption" sx={{ fontSize: 11, display: 'block', mt: 0.25 }}>
+                        {img.label || img.alt}
+                      </Typography>
+                    )}
+                  </Box>
+                );
+              })}
             </Stack>
 
-            <Box sx={{ flex: 1 }}>
+            {/* main image */}
+            <Box
+              sx={{
+                position: 'relative',
+                height: { xs: 320, md: 440 },
+                bgcolor: '#f5f5f5',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               {selectedImage && (
                 <Image
                   src={getAssetUrl(selectedImage)}
                   width={600}
                   height={600}
                   alt={data.title}
-                  style={{
-                    width: '100%',
-                    height: '420px',
-                    objectFit: 'contain',
-                    background: '#f5f5f5',
-                    borderRadius: 8,
-                  }}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
+              )}
+
+              {galleryImages.length > 1 && (
+                <>
+                  <IconButton onClick={() => goTo(-1)} sx={arrowSx('left')} aria-label="Previous image">
+                    <ChevronLeftIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton onClick={() => goTo(1)} sx={arrowSx('right')} aria-label="Next image">
+                    <ChevronRightIcon fontSize="small" />
+                  </IconButton>
+                  <Box sx={{
+                    position: 'absolute', left: 18, bottom: 18,
+                    bgcolor: 'rgba(255,255,255,.93)', borderRadius: '6px',
+                    px: 1.25, py: 0.75, fontSize: 11, color: '#3d505e', pointerEvents: 'none',
+                  }}>
+                    {selectedIndex + 1} / {galleryImages.length}
+                  </Box>
+                </>
               )}
             </Box>
           </Box>
-             <RelatedProducts slug={slug} />
         </Grid>
 
         {/* ════════ RIGHT — DETAIL PANEL ════════ */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Box mt={{ xs: 2, md: 3 }}>
-
-            {/* BREADCRUMB CHIPS */}
-            <Stack direction="row" spacing={1} mb={1.5} flexWrap="wrap">
-              {data.category?.name      && <Chip label={data.category.name}      size="small" variant="outlined" />}
-              {data.subCategory?.name   && <Chip label={data.subCategory.name}   size="small" variant="outlined" />}
-              {data.childCategory?.name && <Chip label={data.childCategory.name} size="small" variant="outlined" />}
-            </Stack>
-
-            {/* TITLE */}
-            <Typography variant="h5" fontWeight={700} lineHeight={1.35} mb={0.5}>
-              {data.title}
-            </Typography>
+        <Grid size={{ xs: 12, md: 5.5 }}>
+          <Box>
 
             {/* BRAND */}
             {data.isBranded && data.brand?.name && (
-              <Typography variant="body2" color="text.secondary" mb={0.5}>
-                Brand: <b>{data.brand.name}</b>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.4px', color: '#657989', mb: 0.75 }}>
+                {data.brand.name.toUpperCase()}
               </Typography>
             )}
+
+            {/* TITLE */}
+            <Typography component="h1" sx={{ fontSize: { xs: 24, md: 28 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.5px', mb: 1 }}>
+              {data.title}
+            </Typography>
 
             {/* RATING */}
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <StarRating rating={totalRating} />
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontSize={12}>
                 {totalRating > 0 ? totalRating.toFixed(1) : 'No ratings yet'}
                 {totalReviews > 0 && ` (${totalReviews} review${totalReviews !== 1 ? 's' : ''})`}
               </Typography>
             </Stack>
 
-            <Divider sx={{ mb: 2 }} />
-
-            {/*
-              ── PRICING + VARIATIONS + CART ACTIONS ──
-              All handled inside ProductDetailsSummary (with currency conversion + discount logic)
-            */}
+            {/* PRICING + VARIATIONS + CART ACTIONS */}
             <ProductDetailsSummary
               product={data}
               selectedAttrs={selectedAttrs}
@@ -270,81 +326,74 @@ useEffect(() => {
               activeVariation={activeVariation}
             />
 
-            {/* ── POLICIES BLOCK ── */}
+            {/* POLICIES BLOCK */}
             <SellerPolicies
               shippingPolicy={shippingPolicy}
-               product={data}
-                fedexRates={fedexRates}
-                ratesLoading={ratesLoading}
-                onZipChange={(countryCode ,zip) => fetchFedexRates(countryCode,zip)}
-                  detectedCountryCode={detectedCountryCode}
+              product={data}
+              fedexRates={fedexRates}
+              ratesLoading={ratesLoading}
+              onZipChange={(countryCode, zip) => fetchFedexRates(countryCode, zip)}
+              detectedCountryCode={detectedCountryCode}
             />
-
           </Box>
         </Grid>
       </Grid>
 
-      {/* ════════ DESCRIPTION ════════ */}
-      {data.description && (
-        <Box mt={6}>
-          <Typography variant="h6" fontWeight={600} mb={1}>
-            Product Description
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Typography variant="body1" color="text.secondary" lineHeight={1.9}>
-            {data.description}
-          </Typography>
+      {/* ════════ DESCRIPTION + ITEM SPECIFICS ════════ */}
+      {(data.description || allSpecifics.length > 0) && (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: { xs: 4, md: 7.5 },
+            alignItems: 'start',
+            mt: 5, pt: 5,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {data.description ? (
+            <Box>
+              <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '1px', color: '#768995' }}>
+                THE DETAILS
+              </Typography>
+              <Typography sx={{ fontSize: 24, fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.5px', mt: 1.25, mb: 2 }}>
+                Product Description
+              </Typography>
+              <Typography sx={{ fontSize: 13, lineHeight: 1.9, color: '#687b89', maxWidth: 480 }}>
+                {data.description}
+              </Typography>
+            </Box>
+          ) : <Box />}
+
+          {allSpecifics.length > 0 && (
+            <Box>
+              <Typography sx={{ fontSize: 17, fontWeight: 600 }}>Item specifics</Typography>
+              <Box sx={{ mt: 1.5, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, columnGap: 3 }}>
+                {allSpecifics.map(({ label, value }, i) => (
+                  <Box key={i} sx={{ py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Typography sx={{ fontSize: 10, color: '#7c8b96' }}>{label}</Typography>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 500, color: 'text.primary', mt: 0.25 }}>
+                      {value}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
         </Box>
       )}
 
-      {/* ════════ ITEM SPECIFICS — eBay two-column table ════════ */}
-      {allSpecifics.length > 0 && (
-        <Box mt={5} mb={4}>
-          <Typography variant="h6" fontWeight={600} mb={1}>
-            Item Specifics
-          </Typography>
-          <Divider />
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-              border: '1px solid',
-              borderTop: 'none',
-              borderColor: 'divider',
-            }}
-          >
-            {allSpecifics.map(({ label, value }, i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: 'flex',
-                  borderTop: '1px solid',
-                  borderRight: { sm: i % 2 === 0 ? '1px solid' : 'none' },
-                  borderColor: 'divider',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 160,
-                    flexShrink: 0,
-                    bgcolor: 'action.selected',
-                    px: 1.5,
-                    py: 1.2,
-                  }}
-                >
-                  <Typography variant="body2" fontWeight={600} color="text.secondary">
-                    {label}
-                  </Typography>
-                </Box>
-                <Box sx={{ px: 1.5, py: 1.2, flex: 1 }}>
-                  <Typography variant="body2">{value}</Typography>
-                </Box>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      )}
+      {/* ════════ YOU MAY ALSO LIKE ════════ */}
+      <Box mt={6}>
+        <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '1px', color: '#768995' }}>
+          KEEP EXPLORING
+        </Typography>
+        <Typography sx={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.5px', mt: 0.75, mb: 2.5 }}>
+          You may also like
+        </Typography>
+        <RelatedProducts slug={slug} />
+      </Box>
     </Container>
   );
 }
