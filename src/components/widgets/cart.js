@@ -13,14 +13,18 @@ import {
   Stack,
   Typography,
   CircularProgress,
+  
+  
 } from '@mui/material';
 
+import { FiShoppingCart  } from 'react-icons/fi';
 import { HiOutlineShoppingBag } from 'react-icons/hi2';
 import {
   IoClose,
   IoAdd,
   IoRemove,
   IoTrashOutline,
+  
 } from 'react-icons/io5';
 
 import Image from 'next/image';
@@ -213,29 +217,30 @@ export default function CartWidget() {
         }}
       >
         <Badge
-          badgeContent={totalItems}
-          sx={{
-            '& .MuiBadge-badge': {
-              bgcolor: '#ed654f',
-              color: '#fff',
-              fontSize: 10,
-              minWidth: 16,
-              height: 16,
-            },
-          }}
-        >
-          <HiOutlineShoppingBag size={22} />
-        </Badge>
+  badgeContent={totalItems}
+  sx={{
+    '& .MuiBadge-badge': {
+      bgcolor: '#ed654f',
+      color: '#fff',
+      fontSize: 9,
+      minWidth: 15,
+      height: 15,
+    },
+  }}
+>
+  <FiShoppingCart size={17} strokeWidth={1.6} />
+</Badge>
 
-        <Typography
-          sx={{
-            fontSize: 12,
-            lineHeight: '14px',
-            color: 'inherit',
-          }}
-        >
-          Cart
-        </Typography>
+<Typography
+  sx={{
+    fontSize: 10,
+    lineHeight: '13px',
+    color: 'inherit',
+    fontWeight: 400,
+  }}
+>
+  Cart
+</Typography>
       </Stack>
 
       {/* Cart Drawer */}
@@ -314,6 +319,18 @@ export default function CartWidget() {
                   setOpen(false);
                   router.push('/products');
                 }}
+
+                sx={{
+  bgcolor: '#c74735',
+  color: '#fff',
+  borderRadius: 2,
+  textTransform: 'none',
+  boxShadow: 'none',
+  '&:hover': {
+    bgcolor: '#ad3929',
+    boxShadow: 'none',
+  },
+}}
               >
                 Start Shopping
               </Button>
@@ -520,9 +537,17 @@ export default function CartWidget() {
                 size="large"
                 onClick={handleCheckout}
                 sx={{
-                  borderRadius: 2,
-                  py: 1.25,
-                }}
+  borderRadius: 2,
+  py: 1.25,
+  bgcolor: '#c74735',
+  color: '#fff',
+  textTransform: 'none',
+  boxShadow: 'none',
+  '&:hover': {
+    bgcolor: '#ad3929',
+    boxShadow: 'none',
+  },
+}}
               >
                 Proceed to Checkout
               </Button>
@@ -531,7 +556,16 @@ export default function CartWidget() {
                 variant="outlined"
                 fullWidth
                 onClick={handleViewCart}
-                sx={{ borderRadius: 2 }}
+                sx={{
+  borderRadius: 2,
+  color: '#c74735',
+  borderColor: '#c74735',
+  textTransform: 'none',
+  '&:hover': {
+    bgcolor: '#fff5ef',
+    borderColor: '#ad3929',
+  },
+}}
               >
                 View Cart
               </Button>
@@ -540,7 +574,11 @@ export default function CartWidget() {
                 color="error"
                 onClick={handleClearCart}
                 startIcon={<IoTrashOutline />}
-                sx={{ alignSelf: 'center' }}
+                sx={{
+  alignSelf: 'center',
+  color: '#c74735',
+  textTransform: 'none',
+}}
               >
                 Clear Cart
               </Button>

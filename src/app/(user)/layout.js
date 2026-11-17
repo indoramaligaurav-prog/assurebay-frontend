@@ -5,7 +5,7 @@ import { Toolbar } from '@mui/material';
 
 // components
 import Navbar from 'src/layout/_main/navbar';
-import Footer from '@/layout/_main/footer';
+import ConditionalFooter from 'src/components/layout/conditional-footer';
 import ActionBar from 'src/layout/_main/actionbar';
 
 // Meta information
@@ -39,7 +39,7 @@ export default async function RootLayout({ children }) {
       {/* <ActionBar branding={branding}  categories={categories} /> */}
       {children}
       <Toolbar sx={{ display: { xs: 'block', md: 'none' } }} />
-      <Footer branding={branding} />
+      <ConditionalFooter branding={branding} />
     </>
   );
 }

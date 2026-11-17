@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -9,18 +10,25 @@ import {
   Stack,
   Typography,
   Drawer,
+  Avatar,
   IconButton,
   Divider,
   Button,
+  Tabs,
+  Tab,
 } from '@mui/material';
 
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft, FiMessageCircle } from 'react-icons/fi';
 
 import SupportInbox from 'src/components/_main/support';
 import SupportThread from 'src/components/_main/support/thread';
+
+import QuoteChatsInbox from 'src/components/_main/quote-chats/inbox';
+import QuoteConversation from 'src/components/_main/quote-chats/conversation';
+
+const QUOTE_REQUESTS_PATH = '/quote-request';
 
 export default function MessagesWidget() {
   const router = useRouter();
@@ -29,9 +37,16 @@ export default function MessagesWidget() {
   const { isAuthenticated } = useSelector(({ user }) => user);
 
   const [open, setOpen] = React.useState(false);
-  const [selectedTicketId, setSelectedTicketId] = React.useState(null);
+  const [activeTab, setActiveTab] = React.useState('chats');
 
-  const isConversationOpen = Boolean(selectedTicketId);
+  const [selectedTicketId, setSelectedTicketId] = React.useState(null);
+  const [selectedQuote, setSelectedQuote] = React.useState(null);
+
+  const isConversationOpen = Boolean(
+    selectedTicketId || selectedQuote
+  );
+
+  const isQuoteConversation = Boolean(selectedQuote);
 
   const handleOpen = () => {
     if (!isAuthenticated) {
@@ -41,7 +56,9 @@ export default function MessagesWidget() {
       return;
     }
 
+    setActiveTab('chats');
     setSelectedTicketId(null);
+    setSelectedQuote(null);
     setOpen(true);
   };
 
@@ -49,18 +66,36 @@ export default function MessagesWidget() {
     setOpen(false);
   };
 
-  const handleBackToInbox = () => {
+  const handleBack = () => {
     setSelectedTicketId(null);
+    setSelectedQuote(null);
   };
 
-  const handleViewFullPage = () => {
-    const destination = selectedTicketId
-      ? `/support/${selectedTicketId}`
-      : '/support';
+  const handleTabChange = (event, value) => {
+    setActiveTab(value);
+    handleBack();
+  };
 
+  const handleViewFullPage = (destination) => {
     setOpen(false);
     router.push(destination);
   };
+
+  const seller = selectedQuote?.vendor || selectedQuote?.product?.vendor;
+
+const sellerName =
+  seller?.shop?.name ||
+  seller?.shopName ||
+  seller?.name ||
+  selectedQuote?.product?.vendorName ||
+  'Seller';
+
+const sellerInitials = sellerName
+  .trim()
+  .split(/\s+/)
+  .slice(0, 2)
+  .map((word) => word.charAt(0).toUpperCase())
+  .join('');
 
   return (
     <>
@@ -84,7 +119,7 @@ export default function MessagesWidget() {
           },
         }}
       >
-        <ChatBubbleOutlineIcon sx={{ fontSize: 22 }} />
+        <FiMessageCircle size={17} strokeWidth={1.6} />
 
         <Typography
           sx={{
@@ -119,14 +154,19 @@ export default function MessagesWidget() {
           },
         }}
       >
+       
         {/* Fixed header */}
+
+         {!selectedTicketId && (
         <Box
           sx={{
-            px: 3,
-            pt: 3,
-            pb: 2,
-            flexShrink: 0,
-          }}
+      px: 3,
+      pt: 2,
+      pb: 2,
+      flexShrink: 0,
+      flexGrow: 0,
+      bgcolor: '#fff',
+    }}
         >
           <Stack
             direction="row"
@@ -142,9 +182,9 @@ export default function MessagesWidget() {
             >
               {isConversationOpen && (
                 <IconButton
-                  onClick={handleBackToInbox}
-                  aria-label="Back to inbox"
+                  onClick={handleBack}
                   size="small"
+                  aria-label="Back to messages"
                   sx={{
                     bgcolor: '#f6f7f8',
                     flexShrink: 0,
@@ -157,31 +197,78 @@ export default function MessagesWidget() {
                 </IconButton>
               )}
 
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  sx={{
-                    fontSize: 25,
-                    fontWeight: 700,
-                    letterSpacing: '-0.7px',
-                    color: '#292f35',
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {isConversationOpen ? 'Conversation' : 'Messages'}
-                </Typography>
+             {isQuoteConversation ? (
+  <Stack
+    direction="row"
+    alignItems="center"
+    spacing={1.5}
+    sx={{ minWidth: 0, flex: 1 }}
+  >
+    <Avatar
+      sx={{
+        width: 40,
+        height: 40,
+        bgcolor: '#eef0f1',
+        color: '#58656c',
+        fontSize: 12,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}
+    >
+      {sellerInitials}
+    </Avatar>
 
-                <Typography
-                  sx={{
-                    mt: 0.5,
-                    fontSize: 12,
-                    color: '#858b91',
-                  }}
-                >
-                  {isConversationOpen
-                    ? 'View your ticket and reply to support.'
-                    : 'Your support queries and conversations.'}
-                </Typography>
-              </Box>
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        sx={{
+          fontSize: 15,
+          fontWeight: 700,
+          color: '#292f35',
+          lineHeight: 1.4,
+        }}
+        noWrap
+      >
+        {sellerName}
+      </Typography>
+
+      <Typography
+        sx={{
+          fontSize: 11,
+          color: '#858b91',
+          mt: 0.2,
+        }}
+      >
+        Seller
+      </Typography>
+    </Box>
+  </Stack>
+) : (
+  <Box sx={{ minWidth: 0 }}>
+    <Typography
+      sx={{
+        fontSize: 25,
+        fontWeight: 700,
+        letterSpacing: '-0.7px',
+        color: '#292f35',
+        lineHeight: 1.25,
+      }}
+    >
+      {isConversationOpen ? 'Support conversation' : 'Messages'}
+    </Typography>
+
+    <Typography
+      sx={{
+        mt: 0.5,
+        fontSize: 12,
+        color: '#858b91',
+      }}
+    >
+      {isConversationOpen
+        ? 'View your ticket and reply to support.'
+        : 'Conversations and support, in one place.'}
+    </Typography>
+  </Box>
+)}
             </Stack>
 
             <IconButton
@@ -201,32 +288,92 @@ export default function MessagesWidget() {
           </Stack>
         </Box>
 
-        <Divider sx={{ borderColor: '#f0f0f0', flexShrink: 0 }} />
+        )}
+
+        {/* Tabs - only visible in inbox */}
+        {!isConversationOpen && (
+          <>
+            <Divider sx={{ borderColor: '#f0f0f0' }} />
+
+            <Box sx={{ px: 3, py: 1.5, flexShrink: 0 }}>
+              <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                variant="fullWidth"
+                sx={{
+                  minHeight: 38,
+                  bgcolor: '#f5f6f7',
+                  borderRadius: '9px',
+                  p: 0.4,
+                  '& .MuiTabs-indicator': {
+                    display: 'none',
+                  },
+                  '& .MuiTab-root': {
+                    minHeight: 34,
+                    textTransform: 'none',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: '#747d84',
+                    borderRadius: '7px',
+                    px: 1,
+                  },
+                  '& .Mui-selected': {
+                    bgcolor: '#fff',
+                    color: '#292f35 !important',
+                    fontWeight: 700,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                  },
+                }}
+              >
+                <Tab value="chats" label="Chats" />
+                <Tab value="support" label="Support queries" />
+              </Tabs>
+            </Box>
+          </>
+        )}
 
         {/* Scrollable content */}
         <Box
           sx={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            px: { xs: 2, sm: 3 },
-            py: 2,
-            overscrollBehavior: 'contain',
-            scrollbarWidth: 'thin',
-            '& .MuiCard-root': {
-              boxShadow: 'none',
-              border: '1px solid #eeeeee',
-              borderRadius: '12px',
-            },
-          }}
+  flex: 1,
+  minHeight: 0,
+  overflowY: isConversationOpen ? 'hidden' : 'auto',
+  overflowX: 'hidden',
+  px: isConversationOpen ? 0 : { xs: 2, sm: 3 },
+  py: isConversationOpen ? 0 : 1.5,
+  overscrollBehavior: 'contain',
+  scrollbarWidth: 'thin',
+  display: 'flex',
+  flexDirection: 'column',
+  '& .MuiCard-root': {
+    boxShadow: 'none',
+    border: '1px solid #eeeeee',
+    borderRadius: '12px',
+  },
+}}
         >
           {isConversationOpen ? (
-            <SupportThread
-              key={selectedTicketId}
-              ticketId={selectedTicketId}
+            isQuoteConversation ? (
+              <QuoteConversation
+                key={selectedQuote._id}
+                quote={selectedQuote}
+                inDrawer
+              />
+            ) : (
+              <SupportThread
+                  key={selectedTicketId}
+  ticketId={selectedTicketId}
+  inDrawer
+  onBack={handleBack}
+  onClose={handleClose}
+              />
+            )
+          ) : activeTab === 'chats' ? (
+            <QuoteChatsInbox
               inDrawer
-              onBack={handleBackToInbox}
+              onSelectQuote={(quote) => {
+                setSelectedQuote(quote);
+              }}
             />
           ) : (
             <SupportInbox
@@ -239,51 +386,60 @@ export default function MessagesWidget() {
         </Box>
 
         {/* Fixed footer */}
-        <Divider sx={{ borderColor: '#f0f0f0', flexShrink: 0 }} />
+        {!isConversationOpen && (
+          <>
+            <Divider sx={{ borderColor: '#f0f0f0' }} />
 
-        <Box
-          sx={{
-            px: 3,
-            py: 2,
-            flexShrink: 0,
-            bgcolor: '#fff',
-          }}
-        >
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleViewFullPage}
-            endIcon={<ArrowForwardIcon />}
-            sx={{
-              minHeight: 44,
-              borderRadius: '12px',
-              borderColor: '#edc5b5',
-              color: '#b94332',
-              fontSize: 13,
-              fontWeight: 600,
-              textTransform: 'none',
-              '&:hover': {
-                bgcolor: '#fff5ef',
-                borderColor: '#c74735',
-              },
-            }}
-          >
-            {isConversationOpen
-              ? 'View full conversation'
-              : 'View all support'}
-          </Button>
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                flexShrink: 0,
+                bgcolor: '#fff',
+              }}
+            >
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Button
+                  onClick={() =>
+                    handleViewFullPage(QUOTE_REQUESTS_PATH)
+                  }
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{
+                    color: '#292f35',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    textTransform: 'none',
+                    px: 0,
+                    minWidth: 0,
+                  }}
+                >
+                  View all messages
+                </Button>
 
-          <Typography
-            sx={{
-              mt: 1,
-              textAlign: 'center',
-              fontSize: 11,
-              color: '#969ba0',
-            }}
-          >
-            Need more help? Our support team is here for you.
-          </Typography>
-        </Box>
+                <Button
+                  onClick={() =>
+                    handleViewFullPage('/support')
+                  }
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{
+                    color: '#292f35',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    textTransform: 'none',
+                    px: 0,
+                    minWidth: 0,
+                  }}
+                >
+                  View all support
+                </Button>
+              </Stack>
+            </Box>
+          </>
+        )}
       </Drawer>
     </>
   );

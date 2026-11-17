@@ -1,32 +1,34 @@
 'use client';
+
 import React from 'react';
 import { toast } from 'react-hot-toast';
 
-// mui
-import { FormControl, Button, Stack, TextField } from '@mui/material';
+// MUI
+import { FormControl, Stack, TextField, IconButton } from '@mui/material';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-// formik
+// Formik
 import { Form, FormikProvider, useFormik } from 'formik';
 
-// api
+// API
 import * as api from 'src/services';
 import { useMutation } from '@tanstack/react-query';
 
 export default function NewsLetter() {
-  const [loading, setloading] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   const formik = useFormik({
     initialValues: { email: '' },
+
     onSubmit: async (values) => {
-      if (
-        values.email
-          .toLowerCase()
-          .match(
-            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-          )
-      ) {
-        setloading(true);
-        mutate(values);
+      const email = values.email.trim();
+
+      const emailRegex =
+        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+      if (emailRegex.test(email)) {
+        setLoading(true);
+        mutate({ ...values, email });
       } else {
         toast.error('Invalid email!');
       }
@@ -35,14 +37,18 @@ export default function NewsLetter() {
 
   const { mutate } = useMutation({
     mutationFn: api.sendNewsletter,
+
     onSuccess: (data) => {
       toast.success(data.message);
-      setloading(false);
+      setLoading(false);
       formik.resetForm();
     },
+
     onError: (err) => {
-      setloading(false);
-      toast.error(err?.response?.data?.message || 'Something went wrong!');
+      setLoading(false);
+      toast.error(
+        err?.response?.data?.message || 'Something went wrong!'
+      );
     }
   });
 
@@ -51,25 +57,90 @@ export default function NewsLetter() {
   return (
     <FormikProvider value={formik}>
       <Form noValidate autoComplete="off" onSubmit={handleSubmit}>
-        <Stack sx={{}} direction="row" alignItems="center" spacing={2}>
-          <FormControl fullWidth variant="outlined">
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.25}
+          sx={{
+            width: '100%',
+            minWidth: 0
+          }}
+        >
+          <FormControl
+            fullWidth
+            variant="outlined"
+            sx={{
+              flex: '1 1 auto',
+              minWidth: 0
+            }}
+          >
             <TextField
-              size="large"
-              placeholder="Enter your Email"
               {...getFieldProps('email')}
-              sx={{ '& .MuiInputBase-root': { bgcolor: (theme) => theme.palette.background.paper } }}
+              type="email"
+              placeholder="Your email address"
+              aria-label="Your email address"
+              fullWidth
+              disabled={loading}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  height: 52,
+                  borderRadius: '12px',
+                  bgcolor: '#FFFFFF',
+                  color: '#405363',
+                  fontSize: 14,
+
+                  '& fieldset': {
+                    borderColor: '#E0E5EB'
+                  },
+
+                  '&:hover fieldset': {
+                    borderColor: '#CBD5E1'
+                  },
+
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#C74735',
+                    borderWidth: '1px'
+                  }
+                },
+
+                '& .MuiOutlinedInput-input': {
+                  px: 2,
+                  py: 1.5,
+
+                  '&::placeholder': {
+                    color: '#8A8F98',
+                    opacity: 1
+                  }
+                }
+              }}
             />
           </FormControl>
-          <Button
-            variant="contained"
-            size="large"
-            color="primary"
+
+          <IconButton
             type="submit"
-            loading={loading}
-            sx={{ marginTop: 8, paddingX: 4, minHeight: 56 }}
+            aria-label="Subscribe to newsletter"
+            disabled={loading}
+            sx={{
+              flex: '0 0 56px',
+              width: 56,
+              height: 52,
+              borderRadius: '12px',
+              bgcolor: '#F66B4D',
+              color: '#FFFFFF',
+              transition: 'background-color 0.2s ease',
+
+              '&:hover': {
+                bgcolor: '#E85B40'
+              },
+
+              '&.Mui-disabled': {
+                bgcolor: '#F6A08D',
+                color: '#FFFFFF'
+              }
+            }}
           >
-            Subscribe
-          </Button>
+            <ArrowForwardIcon sx={{ fontSize: 24 }} />
+          </IconButton>
         </Stack>
       </Form>
     </FormikProvider>

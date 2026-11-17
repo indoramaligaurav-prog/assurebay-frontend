@@ -50,7 +50,7 @@ export default async function OrderMain(props) {
 
         <Grid container direction={{ xs: 'row', md: 'row-reverse' }} spacing={2}>
           <Grid size={{ md: 4, xs: 12 }}>
-            <OrderDetails data={data.data} isLoading={false} currency={data.data.currency} />
+       
           </Grid>
           <Grid size={{ md: 8, xs: 12 }}>
             <TableCard data={data?.data} isLoading={false} />

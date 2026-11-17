@@ -156,6 +156,11 @@ const posts = [
          pb: 4,
          textAlign: 'center',
        }} ><GoodPlace  /> </Box>
+          <ProductList 
+        title="Recently Viewed Products"
+        path="?featured=true"
+        data={featuredProducts?.data || []}
+      />
 <Marketplace categories={allCategories?.data || []} products={products?.data || []} />
 
 
@@ -196,21 +201,17 @@ const posts = [
     ))}
   </Stack>
 </Box> */}
-      <ProductList 
-        title="Recently Viewed Products"
-        path="?featured=true"
-        data={featuredProducts?.data || []}
-      />
+   
   
 
         
     
-      <ProductList 
+      {/* <ProductList 
         title="Featured Products"
         description="Discover a curated selection of our most loved products — handpicked for quality, popularity, and style."
         path="?featured=true"
         data={featuredProducts?.data || []}
-      />
+      /> */}
 
 <Box sx={{ borderTop: 1, borderColor: "#ccc", margin:"0 30px" }} />
       <ProductList
@@ -225,7 +226,7 @@ const posts = [
       {Boolean(reviews?.data.length) && <Testimonials data={reviews?.data} />}
      
         
-       <WhyUs />
+       {/* <WhyUs /> */}
       {/* <SubscriptionModal /> */}
     </Stack>
   );

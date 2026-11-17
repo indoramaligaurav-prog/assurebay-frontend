@@ -817,12 +817,12 @@ internationalReturns: values.internationalReturns,
     disabled={isRestricted}
   >
     {[
-        { value: 'new', label: 'New' },
-        { value: 'refurbished', label: 'Refurbished' },
-        { value: 'reconditioned', label: 'Reconditioned' },
-        { value: 'overhauled', label: 'Overhauled' },
-        { value: 'used', label: 'Used' },
-        { value: 'as_is', label: 'As-Is' },
+        { value: 'NEW', label: 'New' },
+        { value: 'REFURBISHED', label: 'Refurbished' },
+        { value: 'RECONDITIONED', label: 'Reconditioned' },
+        { value: 'OVERHAULED', label: 'Overhauled' },
+        { value: 'USED', label: 'Used' },
+        { value: 'AS_IS', label: 'As-Is' },
     ].map((c) => (
       <MenuItem key={c.value} value={c.value}>
         {c.label}

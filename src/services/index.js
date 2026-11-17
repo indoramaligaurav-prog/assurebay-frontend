@@ -442,6 +442,11 @@ export const getUserInvoice = async (page) => {
   return response;
 };
 
+export const getUserOrderById = async (id) => {
+  const { data } = await http.get(`/orders/${id}`);
+  return data;
+};
+
 export const updateProfile = async ({ ...payload }) => {
   const { data } = await http.put(`/users/profile`, payload);
   return data;

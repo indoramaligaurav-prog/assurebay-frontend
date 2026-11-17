@@ -3,6 +3,9 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { useSelector } from 'react-redux';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import SearchIcon from '@mui/icons-material/Search';
+import InputBase from '@mui/material/InputBase';
 import {
   Stack,
   AppBar,
@@ -39,11 +42,37 @@ import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import countries from '@/data/countries.json';
 import { useGeoPrefs } from '@/hooks/useGeoPrefs';
 
+import OrdersDrawer from '@/components/_main/profile/orders-drawer';
+
 const MobileBar = dynamic(() => import('@/layout/_main/mobile-bar'));
 
 export default function Navbar({ branding, categories = [] }) {
   const { checkout } = useSelector(({ product }) => product);
   const isMobile = useMediaQuery('(max-width:992px)');
+
+  const pathname = usePathname();
+const router = useRouter();
+const searchParams = useSearchParams();
+
+const hideSearch = pathname === '/';
+
+const [searchQuery, setSearchQuery] = React.useState(
+  searchParams.get('q') || ''
+);
+
+React.useEffect(() => {
+  setSearchQuery(searchParams.get('q') || '');
+}, [searchParams]);
+
+const handleSearch = (event) => {
+  event.preventDefault();
+
+  const query = searchQuery.trim();
+
+  if (!query) return;
+
+  router.push(`/search?q=${encodeURIComponent(query)}`);
+};
 
 
 
@@ -245,17 +274,131 @@ const handleCloseCategories = () => {
       >
   <Container maxWidth="xl">
     {/* ROW 1 */}
-    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ pt: 3, pb: { xs: 1.5, md: 0.5 } }}>
-      <Logo branding={branding} />
+    <Stack
+  direction="row"
+  alignItems="center"
+  justifyContent="space-between"
+  spacing={{ xs: 1, md: 3 }}
+  sx={{
+  pt: { xs: 1.5, sm: 2.375 },
+  pb: { xs: 0.375, sm: 1.125 },
+  minHeight: 72,
+}}
+>
+  <Box
+  sx={{
+    width: { xs: 110, sm: 140 },
+    minWidth: { xs: 110, sm: 140 },
+    height: { xs: 34, sm: 44 },
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
 
-      <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2.5 }}>
-        <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2.5 }}>
-                <MessagesWidget />
-          <WishlistWidget />
-    
-          <CartWidget checkout={checkout} />
-        </Box>
+    '& a': {
+      display: 'flex',
+      alignItems: 'center',
+      width: '100%',
+      height: '100%',
+    },
 
+    '& img, & svg': {
+      display: 'block',
+      width: '100%',
+      maxWidth: '100%',
+      height: 'auto',
+      maxHeight: { xs: 27, sm: 34 },
+      objectFit: 'contain',
+      objectPosition: 'left center',
+    },
+  }}
+>
+  <Logo branding={branding} />
+</Box>
+
+  {!hideSearch && (
+    <Box
+      component="form"
+      onSubmit={handleSearch}
+      sx={{
+        display: { xs: 'none', md: 'flex' },
+        alignItems: 'center',
+        flex: 1,
+        maxWidth: 560,
+        height: 46,
+        mx: { md: 2, lg: 5 },
+        px: 1,
+        border: '1px solid #E3E5E8',
+        borderRadius: '50px',
+        bgcolor: '#F8F9FA',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+        '&:focus-within': {
+          borderColor: '#C74735',
+          boxShadow: '0 0 0 3px rgba(199,71,53,0.08)'
+        }
+      }}
+    >
+      <InputBase
+        value={searchQuery}
+        onChange={(event) => setSearchQuery(event.target.value)}
+        placeholder="Search products, brands and more..."
+        inputProps={{ 'aria-label': 'Search products' }}
+        sx={{
+          flex: 1,
+          pl: 2,
+          fontSize: 13.5,
+          color: '#292322'
+        }}
+      />
+
+      <IconButton
+        type="submit"
+        aria-label="Search"
+        sx={{
+          width: 36,
+          height: 36,
+          bgcolor: '#C74735',
+          color: '#fff',
+          '&:hover': { bgcolor: '#A93B2C' }
+        }}
+      >
+        <SearchIcon fontSize="small" />
+      </IconButton>
+    </Box>
+  )}
+
+  <Stack
+    direction="row"
+    alignItems="center"
+    spacing={{ xs: 1, md: 2.5 }}
+    sx={{ flexShrink: 0 }}
+  >
+        <Box
+  sx={{
+    display: { xs: 'none', sm: 'flex' },
+    alignItems: 'center',
+    gap: 1.25,
+
+    '& svg': {
+      width: '16px !important',
+      height: '16px !important',
+      strokeWidth: 1.6,
+    },
+
+    '& button': {
+      minWidth: 'unset',
+      padding: '4px 6px',
+    },
+
+    '& .MuiTypography-root': {
+      fontSize: '10px',
+      lineHeight: 1.4,
+    },
+  }}
+>
+  <MessagesWidget />
+  <WishlistWidget />
+  <CartWidget checkout={checkout} />
+</Box>
         {/* currency trigger */}
       <Box onClick={() => setDialogOpen(true)}
         sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer',
@@ -272,8 +415,18 @@ const handleCloseCategories = () => {
     </Stack>
 
     {/* ROW 2 (desktop only) */}
-    <Stack direction="row" alignItems="center" justifyContent="space-between"
-      sx={{ display: { xs: 'none', md: 'flex' }, pb: 1.5 }}>
+    <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          pb: 1,
+          '& a': {
+            fontSize: '12px',
+          },
+        }}
+      >
      {/* ALL CATEGORIES BUTTON */}
 <Button
   onClick={handleOpenCategories}
@@ -657,15 +810,45 @@ const handleCloseCategories = () => {
 </Popover>
 
       <Stack direction="row" alignItems="center" spacing={3}>
-        {[['My orders', '/profile/orders'], ['Order tracking', '/order-tracking'], ['Help & support', '/contact-us']].map(([label, href]) => (
-          <Typography key={label} component={NextLink} href={href}
-            sx={{ fontSize: 14, color: '#4a4240', textDecoration: 'none', '&:hover': { color: '#c74735' } }}>
-            {label}
-          </Typography>
-        ))}
+        <OrdersDrawer />
+
+{[
+  ['Order tracking', '/order-tracking'],
+  ['Help & support', '/contact-us']
+].map(([label, href]) => (
+  <Typography
+    key={label}
+    component={NextLink}
+    href={href}
+    sx={{
+  fontSize: 10,
+  color: '#594b42',
+  textDecoration: 'none',
+  whiteSpace: 'nowrap',
+  '&:hover': {
+    color: '#c74735',
+  },
+}}
+  >
+    {label}
+  </Typography>
+))}
         <Button component={NextLink} href="/seller-register" /* copy the href SellerWidget uses */
-          sx={{  color: '#c74735', borderRadius: '40px', textTransform: 'none',
-                px: 2.5, fontWeight: 600, border:'0.5px solid #be6d62', '&:hover': { bgcolor: '#f8d6c9' } }}>
+          sx={{
+              color: '#c74735',
+              borderRadius: '40px',
+              textTransform: 'none',
+              px: 2,
+              py: 1,
+              fontSize: 12,
+              fontWeight: 500,
+              minHeight: 40,
+              border: '1px solid #e3b09e',
+              bgcolor: '#fffaf7',
+              '&:hover': {
+                bgcolor: '#fff1e8',
+              },
+            }}>
           Sell on Wreeo
         </Button>
       </Stack>

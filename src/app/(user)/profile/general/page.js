@@ -1,40 +1,12 @@
 import React from 'react';
+import GeneralProfileMain from 'src/components/_main/profile/profile';
 
-// mui
-import { Container, Stack } from '@mui/material';
-
-import HeaderBreadcrumbs from '@/components/header-breadcrumbs';
-import GeneralProfileMain from '@/components/_main/profile/profile';
-
-// Meta information
 export const metadata = {
-  title: 'Assuredbay - Your Gateway to Seamless Shopping and Secure Transactions',
+  title: 'Assuredbay - Account Settings',
   applicationName: 'Assuredbay',
   authors: 'Assuredbay'
 };
 
 export default function GeneralProfile() {
-  return (
-    <Container maxWidth="xl">
-      <Stack gap={4}>
-        <HeaderBreadcrumbs
-          heading="General"
-          links={[
-            {
-              name: 'Home',
-              href: '/'
-            },
-            {
-              name: 'Profile',
-              href: '/profile/general'
-            },
-            {
-              name: 'General'
-            }
-          ]}
-        />
-        <GeneralProfileMain />
-      </Stack>
-    </Container>
-  );
+  return <GeneralProfileMain />;
 }

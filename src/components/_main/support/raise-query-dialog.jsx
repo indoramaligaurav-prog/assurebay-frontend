@@ -34,8 +34,10 @@ RaiseQueryDialog.propTypes = {
   contextLabel: PropTypes.string,
   relatedOrder: PropTypes.string,
   relatedOrderItem: PropTypes.string,
-  relatedProduct: PropTypes.string
+  relatedProduct: PropTypes.string,
+  inDrawer: PropTypes.bool,
 };
+
 
 export default function RaiseQueryDialog({
   open,
@@ -45,29 +47,67 @@ export default function RaiseQueryDialog({
   relatedOrder,
   relatedOrderItem,
   relatedProduct,
-  itemStatus
+  itemStatus,
+  inDrawer = false,
 }) {
   const isOrderIssue = Boolean(relatedOrderItem);
 
+  const content = isOrderIssue ? (
+    <OrderIssueForm
+      open={open}
+      onClose={onClose}
+      onCreated={onCreated}
+      contextLabel={contextLabel}
+      relatedOrder={relatedOrder}
+      relatedOrderItem={relatedOrderItem}
+      relatedProduct={relatedProduct}
+      itemStatus={itemStatus}
+    />
+  ) : (
+    <GeneralQueryForm
+      open={open}
+      onClose={onClose}
+      onCreated={onCreated}
+    />
+  );
+
+  if (inDrawer) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          '& .MuiDialogTitle-root': {
+            px: 0,
+            pt: 1,
+            pb: 2,
+            fontSize: 19,
+            fontWeight: 700,
+            color: '#292f35',
+          },
+          '& .MuiDialogContent-root': {
+            px: 0,
+            py: 1,
+            overflow: 'visible',
+          },
+          '& .MuiDialogActions-root': {
+            px: 0,
+            pt: 2,
+            pb: 1,
+          },
+        }}
+      >
+        {content}
+      </Box>
+    );
+  }
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      {isOrderIssue ? (
-        <OrderIssueForm
-          open={open}
-          onClose={onClose}
-          onCreated={onCreated}
-          contextLabel={contextLabel}
-          relatedOrder={relatedOrder}
-          relatedOrderItem={relatedOrderItem}
-          relatedProduct={relatedProduct}
-          itemStatus={itemStatus}
-        />
-      ) : (
-        <GeneralQueryForm open={open} onClose={onClose} onCreated={onCreated} />
-      )}
+      {content}
     </Dialog>
   );
 }
+
 
 // ────────────────────────────────────────────────────────────────
 // Order-issue flow: reason (dynamic) -> evidence (if required) -> details
