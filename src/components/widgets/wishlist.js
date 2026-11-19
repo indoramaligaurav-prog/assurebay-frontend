@@ -33,6 +33,11 @@ import { setWishlist } from '@/redux/slices/wishlist';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { formatPrice } from '@/utils/formatPrice';
 
+import { FiX, FiArrowRight, FiShoppingBag } from 'react-icons/fi';
+import { MdOutlineStorefront } from 'react-icons/md';
+
+const getBasePrice = (p) => p?.discountPrice || p?.salePrice || p?.price || p?.mrp;
+
 export default function WishlistWidget() {
   const router = useRouter();
   const pathname = usePathname();
@@ -85,6 +90,8 @@ export default function WishlistWidget() {
       const response = await api.getWishlist();
       const items = response?.data || [];
 
+      console.log('WISHLIST ITEM', items[0]);
+
       setProducts(items);
 
       // Keep Redux in sync with the products returned by the backend.
@@ -111,13 +118,13 @@ export default function WishlistWidget() {
 
     const loadPrices = async () => {
       const pricedProducts = products.filter(
-        (product) => product?.mrp && product?._id
+        (product) => getBasePrice(product) && product?._id
       );
 
       const entries = await Promise.all(
         pricedProducts.map(async (product) => {
           try {
-            const amount = product.discountPrice || product.mrp;
+            const amount = getBasePrice(product);
 
             const formatted = await formatPrice({
               amount,
@@ -264,294 +271,202 @@ export default function WishlistWidget() {
         }}
       >
         {/* Fixed header */}
-        <Box sx={{ px: 3, pt: 3, pb: 2, flexShrink: 0 }}>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            spacing={2}
+
+        {/* Header */}
+<Box
+  sx={{
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+    px: 3, pt: 3, pb: 2.5, borderBottom: '1px solid #eee', flexShrink: 0,
+  }}
+>
+  <Box>
+    <Typography sx={{ fontSize: 32, fontWeight: 500, letterSpacing: '-1px', color: '#111', lineHeight: 1.2 }}>
+      Wishlist
+    </Typography>
+    <Typography sx={{ mt: 0.75, fontSize: 15, color: '#6b7280' }}>
+      Your saved products, in one place.
+    </Typography>
+  </Box>
+  <IconButton
+    onClick={handleClose}
+    aria-label="Close wishlist"
+    sx={{ width: 44, height: 44, bgcolor: '#f1f3f5', '&:hover': { bgcolor: '#e6e9ec' } }}
+  >
+    <CloseIcon fontSize="small" />
+  </IconButton>
+</Box>
+
+{/* Scrollable body */}
+<Box
+  sx={{
+    flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
+    px: 3, py: 2.5, overscrollBehavior: 'contain', scrollbarWidth: 'thin',
+  }}
+>
+  {loading ? (
+    <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 220 }}>
+      <CircularProgress size={28} sx={{ color: '#c74735' }} />
+      <Typography sx={{ fontSize: 13, color: '#858b91' }}>Loading your wishlist...</Typography>
+    </Stack>
+  ) : products.length === 0 ? (
+    <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 300, textAlign: 'center', px: 2 }}>
+      <Box
+        sx={{
+          width: 76, height: 76, borderRadius: '18px', bgcolor: '#fdeee8', color: '#c74735',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <FavoriteBorderIcon sx={{ fontSize: 34 }} />
+      </Box>
+      <Typography sx={{ fontSize: 22, fontWeight: 600, color: '#111' }}>Your wishlist is empty</Typography>
+      <Typography sx={{ fontSize: 14.5, color: '#6b7280', maxWidth: 280 }}>
+        Save products you love, and they will be waiting here for you.
+      </Typography>
+      <Button
+        onClick={() => { handleClose(); router.push('/products'); }}
+        endIcon={<FiArrowRight size={18} />}
+        sx={{
+          mt: 1, px: 4, py: 1.5, borderRadius: '10px', bgcolor: '#c4503f', color: '#fff',
+          fontSize: 15, fontWeight: 600, textTransform: 'none', boxShadow: 'none',
+          '&:hover': { bgcolor: '#a93f30', boxShadow: 'none' },
+        }}
+      >
+        Browse products
+      </Button>
+    </Stack>
+  ) : (
+    <>
+      {/* Section heading */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.5 }}>
+        <Typography sx={{ fontSize: 18, fontWeight: 500, color: '#111' }}>Saved items</Typography>
+        <Typography sx={{ fontSize: 14.5, color: '#6b7280' }}>
+          {products.length} {products.length === 1 ? 'item' : 'items'}
+        </Typography>
+      </Stack>
+
+      {products.map((product, index) => {
+        const productId = String(product._id);
+        const image = getAssetUrl(product.images?.[0]?.url || '/placeholder.png');
+        const href = `/product/${product.slug || product._id}`;
+        const isQuote = product.pricingMode === 'quote' || !getBasePrice(product);
+        const meta = [product.condition, product.category?.name].filter(Boolean).join(' · ');
+        const vendorName = product.vendorName || product.vendor?.shop?.name || product.vendor?.name;
+
+        return (
+          <Box
+            key={productId}
+            sx={{
+              display: 'flex', gap: 2, py: 3,
+              borderTop: index === 0 ? 'none' : '1px solid #ececec',
+              pt: index === 0 ? 0 : 3,
+            }}
           >
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: 25,
-                  fontWeight: 700,
-                  letterSpacing: '-0.7px',
-                  color: '#292f35',
-                  lineHeight: 1.25,
-                }}
-              >
-                My Wishlist
-              </Typography>
-
-              <Typography sx={{ mt: 0.5, fontSize: 12, color: '#858b91' }}>
-                {products.length}{' '}
-                {products.length === 1 ? 'item saved' : 'items saved'} for later
-              </Typography>
-            </Box>
-
-            <IconButton
+            <Link
+              href={href}
               onClick={handleClose}
-              aria-label="Close wishlist"
-              size="small"
-              sx={{
-                bgcolor: '#f6f7f8',
-                '&:hover': { bgcolor: '#eceeef' },
+              style={{
+                position: 'relative', display: 'block', width: 80, height: 80, flexShrink: 0,
+                background: '#f5f5f4', borderRadius: 12, overflow: 'hidden',
               }}
             >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Stack>
-        </Box>
+              <Image src={image} alt={product.title || 'Product'} fill sizes="80px" style={{ objectFit: 'contain', padding: 4 }} />
+            </Link>
 
-        <Divider sx={{ borderColor: '#f0f0f0', flexShrink: 0 }} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                <Typography
+                  component={Link}
+                  href={href}
+                  onClick={handleClose}
+                  sx={{
+                    fontSize: 17, fontWeight: 500, color: '#111', textDecoration: 'none', lineHeight: 1.3,
+                    '&:hover': { color: '#c74735' },
+                  }}
+                >
+                  {product.title || 'Untitled product'}
+                </Typography>
+                <IconButton
+                  size="small"
+                  aria-label={`Remove ${product.title || 'product'} from wishlist`}
+                  disabled={removingId === productId}
+                  onClick={() => handleRemove(product)}
+                  sx={{ color: '#6b7280', mt: -0.5, mr: -0.5 }}
+                >
+                  {removingId === productId ? <CircularProgress size={16} /> : <FiX size={18} />}
+                </IconButton>
+              </Stack>
 
-        {/* Scrollable products */}
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            px: { xs: 2, sm: 3 },
-            py: 2,
-            overscrollBehavior: 'contain',
-            scrollbarWidth: 'thin',
-          }}
-        >
-          {loading ? (
-            <Stack
-              alignItems="center"
-              justifyContent="center"
-              spacing={1.5}
-              sx={{ minHeight: 220 }}
-            >
-              <CircularProgress size={28} sx={{ color: '#c74735' }} />
-              <Typography sx={{ fontSize: 13, color: '#858b91' }}>
-                Loading your wishlist...
-              </Typography>
-            </Stack>
-          ) : products.length === 0 ? (
-            <Stack
-              alignItems="center"
-              justifyContent="center"
-              spacing={1.5}
-              sx={{ minHeight: 300, textAlign: 'center', px: 2 }}
-            >
-              <Box
-                sx={{
-                  width: 76,
-                  height: 76,
-                  borderRadius: '50%',
-                  bgcolor: '#fff2ed',
-                  color: '#c74735',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <FavoriteBorderIcon sx={{ fontSize: 36 }} />
+              {meta && (
+                <Typography sx={{ mt: 0.5, fontSize: 13.5, color: '#6b7280' }}>{meta}</Typography>
+              )}
+
+              <Box sx={{ mt: 1 }}>
+                {isQuote ? (
+                  <Typography sx={{ fontSize: 20, fontWeight: 500, color: '#111' }}>Price on request</Typography>
+                ) : (
+                  <Typography component="span" sx={{ fontSize: 20, fontWeight: 600, color: '#111' }}>
+                    {prices[productId] || '...'}
+                    <Typography component="span" sx={{ fontSize: 14, fontWeight: 400, color: '#6b7280' }}>
+                      {' '}/ {product.unit || 'unit'}
+                    </Typography>
+                  </Typography>
+                )}
               </Box>
 
-              <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#292f35' }}>
-                Your wishlist is empty
-              </Typography>
-
-              <Typography sx={{ fontSize: 13, color: '#858b91', maxWidth: 260 }}>
-                Save products you love, and they will be waiting here for you.
-              </Typography>
+              {vendorName && (
+                <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mt: 1, color: '#6b7280' }}>
+                  <MdOutlineStorefront size={16} />
+                  <Typography sx={{ fontSize: 14, color: 'inherit' }}>{vendorName}</Typography>
+                </Stack>
+              )}
 
               <Button
-                onClick={handleClose}
-                variant="outlined"
+                onClick={() => { handleClose(); router.push(href); }}
+                endIcon={isQuote ? <FiArrowRight size={16} /> : <FiShoppingBag size={16} />}
                 sx={{
-                  mt: 1,
-                  borderRadius: '10px',
-                  borderColor: '#edc5b5',
-                  color: '#b94332',
-                  textTransform: 'none',
-                  '&:hover': {
-                    bgcolor: '#fff5ef',
-                    borderColor: '#c74735',
-                  },
+                  mt: 1.75, px: 2, py: 0.9, borderRadius: '10px', border: '1px solid #e3e5e8',
+                  color: '#111', fontSize: 14, fontWeight: 500, textTransform: 'none',
+                  '&:hover': { bgcolor: '#faf6f3', borderColor: '#d9d9d9' },
                 }}
               >
-                Explore products
+                {isQuote ? 'View details' : 'Add to cart'}
               </Button>
-            </Stack>
-          ) : (
-            <Stack spacing={2}>
-              {products.map((product) => {
-                const productId = String(product._id);
-                const image = getAssetUrl(
-                  product.images?.[0]?.url || '/placeholder.png'
-                );
+            </Box>
+          </Box>
+        );
+      })}
 
-                return (
-                  <Box
-                    key={productId}
-                    sx={{
-                      display: 'flex',
-                      gap: 1.5,
-                      pb: 2,
-                      borderBottom: '1px solid #f0f0f0',
-                    }}
-                  >
-                    <Link
-                      href={`/product/${product.slug || product._id}`}
-                      onClick={handleClose}
-                      style={{
-                        position: 'relative',
-                        display: 'block',
-                        width: 96,
-                        height: 100,
-                        flexShrink: 0,
-                        background: '#fafafa',
-                        borderRadius: 10,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <Image
-                        src={image}
-                        alt={product.title || 'Product'}
-                        fill
-                        sizes="96px"
-                        style={{ objectFit: 'contain', padding: 5 }}
-                      />
-                    </Link>
+      {/* Info note */}
+      <Box sx={{ mt: 1, p: 2.25, bgcolor: '#f7f8f9', borderRadius: '12px' }}>
+        <Typography sx={{ fontSize: 14, lineHeight: 1.8, color: '#6b7280' }}>
+          Buying a replacement part? Match the model, dimensions and specifications before adding it to your order.
+        </Typography>
+      </Box>
+    </>
+  )}
+</Box>
 
-                    <Box
-                      sx={{
-                        flex: 1,
-                        minWidth: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                      }}
-                    >
-                      <Typography
-                        component={Link}
-                        href={`/product/${product.slug || product._id}`}
-                        onClick={handleClose}
-                        sx={{
-                          color: '#302a27',
-                          fontSize: 13,
-                          fontWeight: 600,
-                          lineHeight: 1.5,
-                          textDecoration: 'none',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          '&:hover': { color: '#c74735' },
-                        }}
-                      >
-                        {product.title || 'Untitled product'}
-                      </Typography>
-
-                      <Box sx={{ mt: 0.75 }}>
-                        {product.pricingMode === 'quote' || !product.mrp ? (
-                          <Typography sx={{ fontSize: 12, color: '#b7791f' }}>
-                            Price on request
-                          </Typography>
-                        ) : (
-                          <Typography
-                            sx={{
-                              fontSize: 14,
-                              fontWeight: 700,
-                              color: '#292f35',
-                            }}
-                          >
-                            {prices[productId] || '...'}
-                          </Typography>
-                        )}
-                      </Box>
-
-                      <Box
-                        sx={{
-                          mt: 'auto',
-                          pt: 1,
-                          width: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 1,
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontSize: 11,
-                            color: product.finalStock <= 0 ? '#d14343' : '#39805b',
-                          }}
-                        >
-                          {product.finalStock <= 0 ? 'Out of stock' : 'In stock'}
-                        </Typography>
-
-                        <IconButton
-                          size="small"
-                          aria-label={`Remove ${product.title || 'product'} from wishlist`}
-                          disabled={removingId === productId}
-                          onClick={() => handleRemove(product)}
-                          sx={{
-                            color: '#c74735',
-                            border: '1px solid #f0e0db',
-                            borderRadius: '8px',
-                            '&:hover': { bgcolor: '#fff2ed' },
-                          }}
-                        >
-                          {removingId === productId ? (
-                            <CircularProgress size={17} />
-                          ) : (
-                            <DeleteOutlineIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Stack>
-          )}
-        </Box>
-
-        {/* Fixed footer */}
-        <Divider sx={{ borderColor: '#f0f0f0', flexShrink: 0 }} />
-
-        <Box sx={{ px: 3, py: 2, flexShrink: 0, bgcolor: '#fff' }}>
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleViewAll}
-            endIcon={<ArrowForwardIcon />}
-            sx={{
-              minHeight: 46,
-              borderRadius: '12px',
-              bgcolor: '#c74735',
-              color: '#fff',
-              fontSize: 13,
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: 'none',
-              '&:hover': {
-                bgcolor: '#ad392a',
-                boxShadow: 'none',
-              },
-            }}
-          >
-            View All Wishlist ({products.length})
-          </Button>
-
-          <Typography
-            sx={{
-              mt: 1,
-              textAlign: 'center',
-              fontSize: 11,
-              color: '#969ba0',
-            }}
-          >
-            Your favorite products, all in one place.
-          </Typography>
-        </Box>
+{/* Footer */}
+<Box
+  sx={{
+    px: 3, py: 2.5, flexShrink: 0, bgcolor: '#fff', borderTop: '1px solid #eee',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  }}
+>
+  <Box
+    onClick={handleViewAll}
+    sx={{ display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer', fontSize: 16, fontWeight: 500, color: '#111' }}
+  >
+    View full wishlist <FiArrowRight size={18} />
+  </Box>
+  <Box
+    onClick={() => { setOpen(false); router.push('/products'); }}
+    sx={{ display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer', fontSize: 16, fontWeight: 500, color: '#111' }}
+  >
+    Continue browsing <FiArrowRight size={18} />
+  </Box>
+</Box>
+      
       </Drawer>
 
       <Snackbar

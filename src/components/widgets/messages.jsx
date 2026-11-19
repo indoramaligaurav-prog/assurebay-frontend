@@ -20,7 +20,7 @@ import {
 
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { FiArrowLeft, FiMessageCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiMessageCircle, FiLifeBuoy } from 'react-icons/fi';
 
 import SupportInbox from 'src/components/_main/support';
 import SupportThread from 'src/components/_main/support/thread';
@@ -161,8 +161,8 @@ const sellerInitials = sellerName
         <Box
           sx={{
       px: 3,
-      pt: 2,
-      pb: 2,
+      pt: 3,
+      pb: 2.5,
       flexShrink: 0,
       flexGrow: 0,
       bgcolor: '#fff',
@@ -244,30 +244,18 @@ const sellerInitials = sellerName
   </Stack>
 ) : (
   <Box sx={{ minWidth: 0 }}>
-    <Typography
-      sx={{
-        fontSize: 25,
-        fontWeight: 700,
-        letterSpacing: '-0.7px',
-        color: '#292f35',
-        lineHeight: 1.25,
-      }}
-    >
-      {isConversationOpen ? 'Support conversation' : 'Messages'}
-    </Typography>
+  <Typography
+    sx={{ fontSize: 32, fontWeight: 500, letterSpacing: '-1px', color: '#111', lineHeight: 1.2 }}
+  >
+    {isConversationOpen ? 'Support conversation' : 'Messages'}
+  </Typography>
 
-    <Typography
-      sx={{
-        mt: 0.5,
-        fontSize: 12,
-        color: '#858b91',
-      }}
-    >
-      {isConversationOpen
-        ? 'View your ticket and reply to support.'
-        : 'Conversations and support, in one place.'}
-    </Typography>
-  </Box>
+  <Typography sx={{ mt: 0.75, fontSize: 15, color: '#6b7280' }}>
+    {isConversationOpen
+      ? 'View your ticket and reply to support.'
+      : 'Conversations with sellers and Wreeo.'}
+  </Typography>
+</Box>
 )}
             </Stack>
 
@@ -276,11 +264,11 @@ const sellerInitials = sellerName
               aria-label="Close messages"
               size="small"
               sx={{
-                bgcolor: '#f6f7f8',
+                width: 44,
+                height: 44,
+                bgcolor: '#f1f3f5',
                 flexShrink: 0,
-                '&:hover': {
-                  bgcolor: '#eceeef',
-                },
+                '&:hover': { bgcolor: '#e6e9ec' },
               }}
             >
               <CloseIcon fontSize="small" />
@@ -291,46 +279,33 @@ const sellerInitials = sellerName
         )}
 
         {/* Tabs - only visible in inbox */}
-        {!isConversationOpen && (
-          <>
-            <Divider sx={{ borderColor: '#f0f0f0' }} />
-
-            <Box sx={{ px: 3, py: 1.5, flexShrink: 0 }}>
-              <Tabs
-                value={activeTab}
-                onChange={handleTabChange}
-                variant="fullWidth"
-                sx={{
-                  minHeight: 38,
-                  bgcolor: '#f5f6f7',
-                  borderRadius: '9px',
-                  p: 0.4,
-                  '& .MuiTabs-indicator': {
-                    display: 'none',
-                  },
-                  '& .MuiTab-root': {
-                    minHeight: 34,
-                    textTransform: 'none',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: '#747d84',
-                    borderRadius: '7px',
-                    px: 1,
-                  },
-                  '& .Mui-selected': {
-                    bgcolor: '#fff',
-                    color: '#292f35 !important',
-                    fontWeight: 700,
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <Tab value="chats" label="Chats" />
-                <Tab value="support" label="Support queries" />
-              </Tabs>
-            </Box>
-          </>
-        )}
+        {/* Tabs - only visible in inbox */}
+{!isConversationOpen && (
+  <Box sx={{ px: 3, flexShrink: 0, borderBottom: '1px solid #ececec' }}>
+    <Tabs
+      value={activeTab}
+      onChange={handleTabChange}
+      sx={{
+        minHeight: 48,
+        '& .MuiTabs-indicator': { height: 2, bgcolor: '#e07050', borderRadius: 2 },
+        '& .MuiTab-root': {
+          minHeight: 48,
+          minWidth: 0,
+          px: 0,
+          mr: 4,
+          textTransform: 'none',
+          fontSize: 16,
+          fontWeight: 400,
+          color: '#6b7280',
+        },
+        '& .Mui-selected': { color: '#111 !important', fontWeight: 600 },
+      }}
+    >
+      <Tab value="chats" icon={<FiMessageCircle size={18} />} iconPosition="start" label="Chats" disableRipple />
+      <Tab value="support" icon={<FiLifeBuoy size={18} />} iconPosition="start" label="Support queries" disableRipple />
+    </Tabs>
+  </Box>
+)}
 
         {/* Scrollable content */}
         <Box
@@ -339,8 +314,8 @@ const sellerInitials = sellerName
   minHeight: 0,
   overflowY: isConversationOpen ? 'hidden' : 'auto',
   overflowX: 'hidden',
-  px: isConversationOpen ? 0 : { xs: 2, sm: 3 },
-  py: isConversationOpen ? 0 : 1.5,
+px: isConversationOpen ? 0 : 3,
+py: isConversationOpen ? 0 : 2.5,
   overscrollBehavior: 'contain',
   scrollbarWidth: 'thin',
   display: 'flex',
@@ -370,7 +345,8 @@ const sellerInitials = sellerName
             )
           ) : activeTab === 'chats' ? (
             <QuoteChatsInbox
-              inDrawer
+  inDrawer
+  onClose={handleClose}
               onSelectQuote={(quote) => {
                 setSelectedQuote(quote);
               }}
@@ -385,61 +361,7 @@ const sellerInitials = sellerName
           )}
         </Box>
 
-        {/* Fixed footer */}
-        {!isConversationOpen && (
-          <>
-            <Divider sx={{ borderColor: '#f0f0f0' }} />
-
-            <Box
-              sx={{
-                px: 3,
-                py: 2,
-                flexShrink: 0,
-                bgcolor: '#fff',
-              }}
-            >
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Button
-                  onClick={() =>
-                    handleViewFullPage(QUOTE_REQUESTS_PATH)
-                  }
-                  endIcon={<ArrowForwardIcon />}
-                  sx={{
-                    color: '#292f35',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    textTransform: 'none',
-                    px: 0,
-                    minWidth: 0,
-                  }}
-                >
-                  View all messages
-                </Button>
-
-                <Button
-                  onClick={() =>
-                    handleViewFullPage('/support')
-                  }
-                  endIcon={<ArrowForwardIcon />}
-                  sx={{
-                    color: '#292f35',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    textTransform: 'none',
-                    px: 0,
-                    minWidth: 0,
-                  }}
-                >
-                  View all support
-                </Button>
-              </Stack>
-            </Box>
-          </>
-        )}
+    
       </Drawer>
     </>
   );

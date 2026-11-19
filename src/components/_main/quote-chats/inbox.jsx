@@ -10,20 +10,30 @@ import {
   Typography,
   Stack,
   Chip,
+  Button,
   CircularProgress,
   List,
   ListItemButton,
   Divider,
 } from '@mui/material';
+import { useRouter } from 'next/navigation';
+import { FiMessageCircle, FiLifeBuoy, FiArrowRight } from 'react-icons/fi';
 
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as api from '@/services';
 
 export default function QuoteChatsInbox({
   onSelectQuote,
+  onClose,
   inDrawer = false,
 }) {
+  const router = useRouter();
   const { user } = useSelector((state) => state.user);
+
+  const goTo = (path) => {
+    onClose?.();
+    router.push(path);
+  };
 
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,36 +89,99 @@ export default function QuoteChatsInbox({
     );
   }
 
-  if (!quotes.length) {
-    return (
-      <Box sx={{ textAlign: 'center', py: 8, px: 2 }}>
-        <Avatar
+if (!quotes.length) {
+  return (
+    <Box>
+      {/* Empty card */}
+      <Box
+        sx={{
+          textAlign: 'center',
+          py: 5,
+          px: 3,
+          bgcolor: '#f7f8f9',
+          border: '1px solid #e8eaed',
+          borderRadius: '14px',
+        }}
+      >
+        <Box
           sx={{
-            width: 55,
-            height: 55,
+            width: 76,
+            height: 76,
             mx: 'auto',
-            mb: 2,
-            bgcolor: '#fff2ee',
+            mb: 3,
+            borderRadius: '18px',
+            bgcolor: '#fdeee8',
             color: '#c74735',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          Q
-        </Avatar>
+          <FiMessageCircle size={30} />
+        </Box>
 
-        <Typography fontWeight={700} sx={{ color: '#292f35' }}>
+        <Typography sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.4px', color: '#111' }}>
           No conversations yet
         </Typography>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mt: 0.7, fontSize: 12 }}
-        >
-          Your product quote conversations will appear here.
+        <Typography sx={{ mt: 1.5, fontSize: 14.5, lineHeight: 1.9, color: '#6b7280' }}>
+          Seller conversations start from product pages. Once you contact a seller,
+          you’ll find the conversation here.
         </Typography>
+
+        <Button
+          onClick={() => goTo('/products')}
+          endIcon={<FiArrowRight size={18} />}
+          sx={{
+            mt: 3,
+            px: 4,
+            py: 1.5,
+            borderRadius: '10px',
+            bgcolor: '#c4503f',
+            color: '#fff',
+            fontSize: 15,
+            fontWeight: 600,
+            textTransform: 'none',
+            boxShadow: 'none',
+            '&:hover': { bgcolor: '#a93f30', boxShadow: 'none' },
+          }}
+        >
+          Browse products
+        </Button>
       </Box>
-    );
-  }
+
+      {/* Need help block */}
+      <Stack direction="row" spacing={2.5} alignItems="flex-start" sx={{ mt: 4, px: 1 }}>
+        <Box sx={{ color: '#6b7280', mt: 1.25 }}>
+          <FiLifeBuoy size={26} />
+        </Box>
+        <Box>
+          <Typography sx={{ fontSize: 15, fontWeight: 600, color: '#111' }}>
+            Need help from Wreeo?
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: 14, color: '#6b7280' }}>
+            For an order, a return or your account.
+          </Typography>
+          <Box
+            onClick={() => goTo('/support')}
+            sx={{
+              mt: 1.5,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.75,
+              fontSize: 14,
+              color: '#c74735',
+              cursor: 'pointer',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            Go to support <FiArrowRight size={15} />
+          </Box>
+        </Box>
+      </Stack>
+    </Box>
+  );
+}
 
   return (
     <Box>

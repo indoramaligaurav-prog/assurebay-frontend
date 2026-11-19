@@ -5,6 +5,11 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from '@bprogress/next';
 import { useSelector } from 'react-redux';
 
+import { useDispatch } from 'react-redux';
+import { setLogout } from 'src/redux/slices/user';
+import { resetWishlist } from 'src/redux/slices/wishlist';
+import { deleteCookie } from '@/hooks/use-cookies';
+
 import {
   Box,
   Typography,
@@ -14,12 +19,15 @@ import {
   Divider,
 } from '@mui/material';
 
-import { FiUser, FiPackage, FiHeart, FiMessageCircle, FiSettings } from 'react-icons/fi';
+import {
+  FiUser, FiBox, FiHeart, FiMessageSquare, FiLock, FiShoppingBag,
+  FiChevronRight, FiArrowRight, FiArrowDown, FiHeadphones, FiHome, FiLogOut,
+} from 'react-icons/fi';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
 
 import { PATH_PAGE } from 'src/routes/paths';
-import { UserList } from 'src/components/lists';
+
 
 function getKeyByValue(object, value) {
   return Object.keys(object).find((key) => object[key] === value);
@@ -57,20 +65,72 @@ const subSx = {
   whiteSpace: 'nowrap',
 };
 
-const drawerItemSx = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 1.5,
-  width: '100%',
-  px: 0,
-  py: 1.6,
-  color: '#353a40',
-  cursor: 'pointer',
-  borderRadius: 1,
-  '&:hover': {
-    bgcolor: '#f8f6f4',
-  },
+const sectionLabelSx = {
+  fontSize: 12.5,
+  letterSpacing: '2px',
+  textTransform: 'uppercase',
+  color: '#6b7280',
+  mt: 3,
+  mb: 1,
 };
+
+const SHOPPING_ITEMS = [
+  { label: 'Orders', sub: 'Track and manage your purchases', icon: FiBox, path: '/profile/orders' },
+  { label: 'Wishlist', sub: 'Return to your saved products', icon: FiHeart, path: '/profile/wishlist' },
+  { label: 'Product enquiries', sub: 'Review your product conversations', icon: FiMessageSquare, path: '/qouterequest' },
+];
+
+const getSettingsItems = (role) => {
+  const isAdmin = role === 'admin' || role === 'super-admin';
+  const isVendor = role === 'vendor';
+  return [
+    {
+      label: 'Profile & details',
+      icon: FiUser,
+      path: isAdmin ? '/admin/settings/profile' : isVendor ? '/vendor/settings' : '/profile/general',
+    },
+    {
+      label: 'Change password',
+      icon: FiLock,
+      path: isAdmin
+        ? '/admin/settings/change-password'
+        : isVendor
+          ? '/vendor/settings/change-password'
+          : '/profile/change-password',
+    },
+  ];
+};
+
+function MenuRow({ item, active, onClick }) {
+  const Icon = item.icon;
+  return (
+    <Box
+      onClick={onClick}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        px: 1.5,
+        mx: -1.5,
+        py: item.sub ? 1.5 : 1.75,
+        borderRadius: '12px',
+        cursor: 'pointer',
+        color: active ? '#c74735' : '#1f2328',
+        bgcolor: active ? '#fdeee6' : 'transparent',
+        '&:hover': { bgcolor: active ? '#fdeee6' : '#faf6f3' },
+      }}
+    >
+      <Icon size={20} style={{ color: active ? '#c74735' : '#6b7280', flexShrink: 0 }} />
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontSize: 16, color: 'inherit' }}>{item.label}</Typography>
+        {item.sub && (
+          <Typography sx={{ fontSize: 13.5, color: '#6b7280', mt: 0.25 }}>{item.sub}</Typography>
+        )}
+      </Box>
+      <FiChevronRight size={18} style={{ color: active ? '#c74735' : '#9ca3af' }} />
+    </Box>
+  );
+}
 
 export default function UserSelect() {
   const { user, isAuthenticated } = useSelector(({ user }) => user);
@@ -104,6 +164,30 @@ export default function UserSelect() {
     setOpenUser(false);
     router.push(path);
   };
+
+  const bodyRef = React.useRef(null);
+const dispatch = useDispatch();
+
+const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
+const isVendor = user?.role === 'vendor';
+const isNotUser = isAdmin || isVendor;
+const settingsItems = getSettingsItems(user?.role);
+
+const handleLogout = () => {
+  deleteCookie('token');
+  dispatch(setLogout());
+  dispatch(resetWishlist());
+  setOpenUser(false);
+  setTimeout(() => {
+    location.href = '/auth/sign-in';
+  }, 1000);
+};
+
+const sellerCard = isAdmin
+  ? { title: 'Admin dashboard', sub: 'Manage the marketplace', cta: 'Open dashboard', path: '/admin/dashboard' }
+  : isVendor
+    ? { title: 'Vendor dashboard', sub: 'Manage your store on Wreeo', cta: 'Open dashboard', path: '/vendor/dashboard' }
+    : { title: 'Become a seller', sub: 'List your products on Wreeo', cta: 'Start selling', path: '/create-shop' };
 
   return (
     <>
@@ -139,130 +223,172 @@ export default function UserSelect() {
       </Box>
 
       {/* Right-side account drawer */}
-      <Drawer
-        anchor="right"
-        open={openUser}
-        onClose={handleCloseUser}
-        PaperProps={{
-          sx: {
-            width: {
-              xs: '100%',
-              sm: 430,
-              md: 450,
-            },
-            maxWidth: '100%',
-            bgcolor: '#ffffff',
-            boxShadow: '-8px 0 35px rgba(0,0,0,0.06)',
-          },
+<Drawer
+  anchor="right"
+  open={openUser}
+  onClose={handleCloseUser}
+  PaperProps={{
+    sx: {
+      width: { xs: '100%', sm: 430, md: 450 },
+      maxWidth: '100%',
+      bgcolor: '#fff',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: '-8px 0 35px rgba(0,0,0,0.06)',
+    },
+  }}
+>
+  {/* Header */}
+  <Box
+    sx={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      px: 3, py: 2.5, borderBottom: '1px solid #eee', flexShrink: 0,
+    }}
+  >
+    <Typography sx={{ fontSize: 32, fontWeight: 500, letterSpacing: '-1px', color: '#111' }}>
+      Your account
+    </Typography>
+    <IconButton
+      onClick={handleCloseUser}
+      aria-label="Close account drawer"
+      sx={{ bgcolor: '#f1f3f5', '&:hover': { bgcolor: '#e6e9ec' } }}
+    >
+      <CloseIcon fontSize="small" />
+    </IconButton>
+  </Box>
+
+  {/* Scrollable body */}
+  <Box ref={bodyRef} sx={{ flex: 1, overflowY: 'auto', px: 3, py: 3, position: 'relative' }}>
+    {/* User card */}
+    <Box
+      onClick={() => handleNavigate(settingsItems[0].path)}
+      sx={{
+        display: 'flex', alignItems: 'center', gap: 2, p: 2, cursor: 'pointer',
+        bgcolor: '#fdf6f1', border: '1px solid #f3e2d8', borderRadius: '12px',
+      }}
+    >
+      <Avatar
+        sx={{
+          width: 56, height: 56, bgcolor: '#fff', color: '#c74735',
+          border: '1px solid #f0d9cc', fontSize: 22, fontWeight: 500,
         }}
       >
-        {/* Drawer header */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            px: 3,
-            pt: 3.5,
-            pb: 2.5,
-          }}
-        >
-          <Box>
-            <Typography
-              sx={{
-                fontSize: 27,
-                fontWeight: 700,
-                letterSpacing: '-0.8px',
-                color: '#292f35',
-              }}
-            >
-              Your account
-            </Typography>
+        {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+        {user?.lastName?.charAt(0)?.toUpperCase() || ''}
+      </Avatar>
+      <Box>
+        <Typography sx={{ fontSize: 22, color: '#1f2328' }}>
+          Hello, {user?.firstName || 'User'}
+        </Typography>
+        <Typography sx={{ fontSize: 15, color: '#8a6f63', mt: 0.25 }}>View profile</Typography>
+      </Box>
+    </Box>
 
-            <Typography
-              sx={{
-                mt: 0.5,
-                fontSize: 13,
-                color: '#858b91',
-              }}
-            >
-              The details that make your wreeo yours.
-            </Typography>
-          </Box>
-
-          <IconButton
-            onClick={handleCloseUser}
-            aria-label="Close account drawer"
-            size="small"
-            sx={{
-              bgcolor: '#f6f7f8',
-              '&:hover': {
-                bgcolor: '#eceeef',
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-
-        {/* User information */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.75,
-            px: 3,
-            py: 1.5,
-          }}
-        >
-          <Avatar
-            sx={{
-              width: 40,
-              height: 40,
-              bgcolor: '#edf0f2',
-              color: '#707983',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
-            {user?.lastName?.charAt(0)?.toUpperCase() || ''}
-          </Avatar>
-
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              sx={{
-                fontSize: 19,
-                fontWeight: 650,
-                color: '#30363b',
-              }}
-            >
-              Hello, {user?.firstName || 'User'}
-            </Typography>
-
-            <Typography
-              sx={{
-                fontSize: 13,
-                color: '#858b91',
-              }}
-            >
-              Your account
-            </Typography>
-          </Box>
-        </Box>
-
-        <Divider sx={{ mx: 3, my: 1, borderColor: '#f0f0f0' }} />
-
-        {/* Existing account actions and logout */}
-        <Box sx={{ px: 3, pt: 1 }}>
-          <UserList
-            openUser={openUser}
-            isAuthenticated={isAuthenticated}
-            user={user}
-            setOpen={handleCloseUser}
+    {/* Shopping activity (normal users only) */}
+    {!isNotUser && (
+      <>
+        <Typography sx={sectionLabelSx}>Shopping activity</Typography>
+        {SHOPPING_ITEMS.map((item) => (
+          <MenuRow
+            key={item.label}
+            item={item}
+            active={pathname.includes(item.path)}
+            onClick={() => handleNavigate(item.path)}
           />
+        ))}
+        <Divider sx={{ my: 2.5, borderColor: '#eee' }} />
+      </>
+    )}
+
+    {/* Account settings */}
+    <Typography sx={{ ...sectionLabelSx, mt: isNotUser ? 3 : 0 }}>Account settings</Typography>
+    {settingsItems.map((item) => (
+      <MenuRow
+        key={item.label}
+        item={item}
+        active={pathname.includes(item.path)}
+        onClick={() => handleNavigate(item.path)}
+      />
+    ))}
+
+    {/* Seller / dashboard card */}
+    <Box
+      sx={{
+        mt: 4, p: 2, bgcolor: '#fcece3', border: '1px solid #f0c4b2', borderRadius: '14px',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box
+          sx={{
+            width: 46, height: 46, borderRadius: '12px', bgcolor: '#e07050',
+            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <FiShoppingBag size={22} />
         </Box>
-      </Drawer>
+        <Box>
+          <Typography sx={{ fontSize: 18, color: '#3d2b25' }}>{sellerCard.title}</Typography>
+          <Typography sx={{ fontSize: 14, color: '#8a6f63' }}>{sellerCard.sub}</Typography>
+        </Box>
+      </Box>
+      <Divider sx={{ my: 1.75, borderColor: '#f0c4b2' }} />
+      <Box
+        onClick={() => handleNavigate(sellerCard.path)}
+        sx={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          cursor: 'pointer', color: '#c74735', fontSize: 16,
+        }}
+      >
+        {sellerCard.cta} <FiArrowRight size={20} />
+      </Box>
+    </Box>
+  </Box>
+
+  {/* Footer */}
+  <Box sx={{ flexShrink: 0, bgcolor: '#fafafa', borderTop: '1px solid #eee', px: 3, position: 'relative' }}>
+    <Box
+      onClick={() => handleNavigate('/support')}
+      sx={{
+        display: 'flex', alignItems: 'center', gap: 2, py: 2, cursor: 'pointer',
+        color: '#4b5563', borderBottom: '1px solid #eaeaea',
+      }}
+    >
+      <FiHeadphones size={20} />
+      <Typography sx={{ flex: 1, fontSize: 16, color: 'inherit' }}>Help & support</Typography>
+      <FiChevronRight size={18} style={{ color: '#9ca3af' }} />
+    </Box>
+
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+      <Box
+        onClick={() => handleNavigate('/')}
+        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', color: '#4b5563' }}
+      >
+        <FiHome size={20} />
+        <Typography sx={{ fontSize: 16, color: 'inherit' }}>Back to marketplace</Typography>
+      </Box>
+
+      <IconButton
+        aria-label="Scroll down"
+        onClick={() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' })}
+        sx={{
+          position: 'absolute', left: '50%', top: -22, transform: 'translateX(-50%)',
+          bgcolor: '#fff', border: '1px solid #e5e7eb',
+          '&:hover': { bgcolor: '#f5f5f5' },
+        }}
+      >
+        <FiArrowDown size={18} />
+      </IconButton>
+
+      <Box
+        onClick={handleLogout}
+        sx={{ display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer', color: '#4b5563' }}
+      >
+        <FiLogOut size={20} />
+        <Typography sx={{ fontSize: 16, color: 'inherit' }}>Sign out</Typography>
+      </Box>
+    </Box>
+  </Box>
+</Drawer>
     </>
   );
 }
